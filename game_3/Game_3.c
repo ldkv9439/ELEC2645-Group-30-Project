@@ -177,6 +177,8 @@ MenuState Game3_Run (void)
 
     Joystick_t joystick_data;
 
+    MenuState exit_state = MENU_STATE_HOME;
+
     // Initialize seed for rand() function
     // Generate different sequence of the random number
     srand(HAL_GetTick());
