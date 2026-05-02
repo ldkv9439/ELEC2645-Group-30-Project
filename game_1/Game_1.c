@@ -17,7 +17,7 @@ extern PWM_cfg_t pwm_cfg;
 /*
  * 5-LEVEL MAZE GAME
  * ------------------
- * Joystick: move player
+ * Joystick: move player 
  * BT3: return to menu
  * 13x13 mazes
  * Timer gets shorter on harder levels
