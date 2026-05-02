@@ -45,10 +45,11 @@ static void render_home_menu(MenuSystem* menu) {
         uint8_t text_size = 2;
         
         if (i == menu->selected_option) {
-            LCD_printString(">", 10, y_pos, 1, text_size);  // Arrow pointing to selection
+            LCD_printString(">", 10, y_pos, 3, text_size);  // Arrow pointing to selection
+            LCD_printString((char*)menu_options[i], 30, y_pos, 3, text_size);
         }
-        
-        LCD_printString((char*)menu_options[i], 30, y_pos, 1, text_size);
+        else{
+        LCD_printString((char*)menu_options[i], 30, y_pos, 1, text_size);}
     }
     
     // Instructions
