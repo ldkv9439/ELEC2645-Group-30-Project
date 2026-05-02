@@ -37,6 +37,13 @@ static const uint16_t palette_custom[16] = {
     LCD_COLOUR_3, RGB565_VINTAGE_13, RGB565_VINTAGE_14, RGB565_VINTAGE_15
 };
 
+static const uint16_t game_3_palette_custom[16] = {
+    RGB565_BLACK, LCD_COLOUR_1, LCD_COLOUR_2, LCD_COLOUR_3,
+    LCD_COLOUR_4, LCD_COLOUR_5, LCD_COLOUR_6, LCD_COLOUR_7,
+    LCD_COLOUR_8,  LCD_COLOUR_9,  LCD_COLOUR_10, LCD_COLOUR_11,
+    RGB565_GREY_1, LCD_COLOUR_13, RGB565_VINTAGE_5, RGB565_ORANGE_BRIGHT 
+};
+
 // Active palette pointer (defaults to palette_default)
 static const uint16_t *colour_map = palette_default;
 

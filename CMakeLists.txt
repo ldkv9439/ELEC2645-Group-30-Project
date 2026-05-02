@@ -64,6 +64,13 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/game_2/Plant.c
     ${CMAKE_SOURCE_DIR}/game_2/Zombie.c
     ${CMAKE_SOURCE_DIR}/game_2/Projectile.c
+
+        # Game 2 PVZ dependencies
+    ${CMAKE_SOURCE_DIR}/game_3/Character.c
+    ${CMAKE_SOURCE_DIR}/game_3/coins.c
+    ${CMAKE_SOURCE_DIR}/game_3/ghost.c
+    ${CMAKE_SOURCE_DIR}/game_3/level.c
+    ${CMAKE_SOURCE_DIR}/game_3/lava.c
 )
 
 # Add include paths
