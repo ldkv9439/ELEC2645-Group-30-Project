@@ -181,7 +181,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 int main(void)
 {
     /* MCU Configuration */
-    HAL_Init();
+`    HAL_Init();
     SystemClock_Config();
     PeriphCommonClock_Config();
 
@@ -226,10 +226,26 @@ int main(void)
     LCD_Refresh(&cfg0);
 
     // Startup animation
-    LCD_printString("GROUP 30", 40, 50, 1, 2);
-    LCD_printString("PRESENTS...", 50, 100, 1, 2);
-    LCD_Refresh(&cfg0);
-    HAL_Delay(1000);
+    for (int i = 1; i <= 3; i++) {
+        LCD_Fill_Buffer(0);  // clear screen each frame
+
+        // Keep title visible
+        LCD_printString("GROUP 30", 50, 80, 1, 3);
+
+        // Print base text
+        LCD_printString("PRESENTS", 30, 120, 1, 3);
+
+        // Add dots dynamically
+        for (int j = 0; j < i; j++) {
+            LCD_printString(".", 170 + (j * 10), 120, 1, 3);
+        }
+
+        LCD_Refresh(&cfg0);
+        HAL_Delay(500);
+    }
+
+    // Hold final frame
+    HAL_Delay(2500);
     
     // Initialize PWM for LED control
     PWM_Init(&pwm_cfg);
@@ -240,6 +256,13 @@ int main(void)
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
     // ===== INITIALIZE MENU SYSTEM =====
+    int startup_sound_freq[] = {800, 1000, 1200, 1400};
+    for(int i = 0; i<4; i++){
+        buzzer_tone(&buzzer_cfg, startup_sound_freq[i], 100);
+        HAL_Delay(150);
+        buzzer_off(&buzzer_cfg);
+    }
+    
     Menu_Init(&menu);
     
     printf("Menu system initialized. Press BT3 to select.\n");
