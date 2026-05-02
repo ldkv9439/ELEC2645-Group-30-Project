@@ -88,6 +88,9 @@ void LCD_Set_Palette(LCD_Palette palette) {
     case PALETTE_CUSTOM:
       colour_map = palette_custom;
       break;
+    case PALETTE_AISYA:
+      colour_map = game_3_palette_custom;
+      break;
     case PALETTE_DEFAULT:
     default:
       colour_map = palette_default;

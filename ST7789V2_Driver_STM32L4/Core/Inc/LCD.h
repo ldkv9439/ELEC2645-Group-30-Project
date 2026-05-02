@@ -131,7 +131,8 @@ typedef enum {
     PALETTE_DEFAULT = 0,
     PALETTE_GREYSCALE = 1,
     PALETTE_VINTAGE = 2,
-    PALETTE_CUSTOM = 3
+    PALETTE_CUSTOM = 3,
+    PALETTE_AISYA = 4
 } LCD_Palette;
 
 /* Set Colour Palette

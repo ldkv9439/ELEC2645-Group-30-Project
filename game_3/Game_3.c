@@ -109,8 +109,6 @@ void opening_page(void);
 void loading_line_animation(uint16_t x, uint16_t y);
 void chick_intro_animation(uint16_t x, uint16_t y);
 void win_melody (void);
-LCD_Set_Palette(game_3_palette_custom);
-
 // ===== Main Function =====
 
 /**
@@ -142,6 +140,7 @@ MenuState Game3_Run (void)
     // Initialize Joystick
     Joystick_Init(&joystick_cfg);
     
+    LCD_Set_Palette(PALETTE_AISYA);
     // Initialize Character
     Character_Init(&game_character);
     
