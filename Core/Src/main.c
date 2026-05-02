@@ -225,27 +225,28 @@ int main(void)
     LCD_Fill_Buffer(0);
     LCD_Refresh(&cfg0);
 
+    int startup_animation_color[] = {2,6,3,4,1}; // Red, Yellow, Green, Blue, White
     // Startup animation
-    for (int i = 1; i <= 3; i++) {
+    for (int i = 1; i <= 5; i++) {
         LCD_Fill_Buffer(0);  // clear screen each frame
 
         // Keep title visible
-        LCD_printString("GROUP 30", 50, 80, 1, 3);
+        LCD_printString("GROUP 30", 50, 80, startup_animation_color[i-1], 3);
 
         // Print base text
-        LCD_printString("PRESENTS", 30, 120, 1, 3);
+        LCD_printString("PRESENTS", 30, 120, startup_animation_color[i-1], 3);
 
         // Add dots dynamically
         for (int j = 0; j < i; j++) {
-            LCD_printString(".", 170 + (j * 10), 120, 1, 3);
+            LCD_printString(".", 170 + (j * 10), 120, startup_animation_color[i-1], 3);
         }
 
         LCD_Refresh(&cfg0);
-        HAL_Delay(500);
+        HAL_Delay(300);
     }
 
     // Hold final frame
-    HAL_Delay(2500);
+    HAL_Delay(500);
     
     // Initialize PWM for LED control
     PWM_Init(&pwm_cfg);
