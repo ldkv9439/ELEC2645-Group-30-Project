@@ -190,6 +190,11 @@ MenuState Game3_Run (void)
 
         Input_Read();
 
+        if (current_input.btn1_pressed) {
+            exit_state = MENU_STATE_HOME;
+            break;  // Exit game loop
+        }
+
         // Turn on LD2 on PA5
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 
