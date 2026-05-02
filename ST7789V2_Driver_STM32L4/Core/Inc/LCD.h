@@ -60,6 +60,7 @@ Written by Aeron Jarvis and James Avery
 #define RGB565_PINK_BRIGHT   0x5AF8  
 #define RGB565_TEAL_BRIGHT   0xD244  
 #define RGB565_GREY_STANDARD 0xB5A8 
+#define RGB565_GREYISH_GREEN 0x4A69
 
 // These colours are used in the default colour palette
 // Selected from the above for high contrast and variety

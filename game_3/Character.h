@@ -75,8 +75,8 @@ typedef struct {
 
 // ===== CONSTANTS =====
 
-#define CHAR_SPEED 5                // Pixels per frame (normal)
-#define CHAR_DASH_SPEED 7           // Pixels per frame (dashing)
+#define CHAR_SPEED 7                // Pixels per frame (normal)
+#define CHAR_DASH_SPEED 10           // Pixels per frame (dashing)
 #define CHAR_DASH_DURATION 20       // Frames (dash lasts this long)
 #define CHAR_COLLIDE_DURATION 40    // Frames (collision effect lasts this long)
 

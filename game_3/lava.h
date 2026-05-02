@@ -13,9 +13,9 @@
 #include <stdlib.h>
 #include "Character.h"
 
-#define LAVA_MAX 5    // Maximum number of coins
-#define LAVA_SIZE 20  // Radius of coins
-#define LAVA_RADIUS 10  // Radius of coins
+#define LAVA_FRAME_COUNT 2     // Ghost animation frames
+#define LAVA_MAX 6    // Maximum number of coins
+#define LAVA_RADIUS 8  // Radius of coins
 
 /**
  * @struct Lava_t

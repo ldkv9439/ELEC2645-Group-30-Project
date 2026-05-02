@@ -57,6 +57,13 @@ void Coins_Reset (void) {
 void Coins_Add (int amount) {
     // Add coins based on the amount set in each level
     coins_remaining = amount;
+    
+    int ghost_radius = 20;
+    int lava_radius = 20;
+
+    if (level_state == BOSSLEVEL) {
+        ghost_radius = 45;
+    }
 
     for (int i = 0; i < amount; i++) {
 
@@ -79,20 +86,20 @@ void Coins_Add (int amount) {
             }
 
             for (int g = 0; g < ghost_count; g++) {
-                if (Circle_Overlap(x, y, COINS_SPACING, ghosts[g].x, ghosts[g].y, COINS_SPACING)) {
+                if (Circle_Overlap(x, y, COINS_SPACING, ghosts[g].x, ghosts[g].y, ghost_radius)) {
                     collision = 1;
                     break;
                 }
             }
 
             for (int h = 0; h < LAVA_MAX; h++) {
-                if (Circle_Overlap(x, y, COINS_SPACING, lava[h].x, lava[h].y, COINS_SPACING)) {
+                if (Circle_Overlap(x, y, COINS_SPACING, lava[h].x, lava[h].y, lava_radius)) {
                     collision = 1;
                     break;
                 }
             }
 
-            if (Circle_Overlap(x, y, COINS_SPACING, game_character.x, game_character.y, COINS_SPACING)) {
+            if (Circle_Overlap(x, y, COINS_SPACING, game_character.x, game_character.y, 16)) {
                 collision = 1;
             }
 

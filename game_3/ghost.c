@@ -37,8 +37,8 @@ const uint8_t GhostIDLE1[8][8] = {
     {255,255,13,13,13,1,255,255},
     {255,13,13,13,1,1,1,255},
     {255,13,13,1,1,1,1,1},
-    {13,13,255,255,1,255,255,1},
-    {13,13,255,2,1,255,2,1},
+    {13,13,0,0,1,0,0,1},
+    {13,13,0,2,1,0,2,1},
     {13,13,13,1,1,1,1,1},
     {13,13,13,1,1,1,1,1},
     {13,13,255,1,1,255,1,1}
@@ -52,8 +52,8 @@ const uint8_t GhostIDLE2[8][8] = {
     {255,255,13,13,13,1,255,255},
     {255,13,13,13,1,1,1,255},
     {255,13,13,1,1,1,1,1},
-    {13,13,255,255,1,255,255,1},
-    {13,13,255,2,1,255,2,1},
+    {13,13,0,0,1,0,0,1},
+    {13,13,0,2,1,0,2,1},
     {13,13,13,1,1,1,1,1},
     {13,13,13,1,1,1,1,1},
     {13,255,1,1,255,1,1,255}
@@ -64,7 +64,7 @@ static const uint8_t* GHOST_FRAMES[GHOST_FRAME_COUNT] = {
     (const uint8_t*)GhostIDLE2
 };
 
-void hit_melody (void) {
+void bullet_hit_melody (void) {
     buzzer_note(&buzzer_cfg, NOTE_DS5, 40);
     HAL_Delay(15);
 
@@ -186,7 +186,7 @@ void Ghost_Update (Character_t* character) {
             LCD_Draw_Rect(155, 17, 40, 16, 0, 1); // clear the score board
             LCD_Draw_Rect(30, 34, 40, 16, 0, 1); // clear the shield count
 
-            hit_melody();
+            bullet_hit_melody();
 
             }
         }

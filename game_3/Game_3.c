@@ -109,6 +109,7 @@ void opening_page(void);
 void loading_line_animation(uint16_t x, uint16_t y);
 void chick_intro_animation(uint16_t x, uint16_t y);
 void win_melody (void);
+void draw_grid_background (void);
 // ===== Main Function =====
 
 /**
@@ -399,10 +400,10 @@ MenuState Game3_Run (void)
                 LCD_Fill_Buffer(0);
                 LCD_printString("REWARD", 30, 20, 10, 5); 
                 LCD_printString("TIME!", 50, 70, 10, 5); 
-                LCD_printString("You are given either", 30,130, 1, 2); 
-                LCD_printString("LIFE +1 /", 70, 160, 3, 2); 
+                LCD_printString("You will receive", 20,130, 1, 2); 
+                LCD_printString("LIFE +1 /", 70, 160, 4, 2); 
                 LCD_printString("SHIELD MAX /", 50, 180, 11, 2); 
-                LCD_printString("LIFE MAX", 70, 200, 14, 2); 
+                LCD_printString("LIFE MAX", 70, 200, 3, 2); 
 
                 LCD_Refresh(&cfg0);
 
@@ -520,13 +521,16 @@ void update_character(Joystick_t* joy) {
  */
 void render_game(void) {
     // Clear screen buffer
-    LCD_Fill_Buffer(12);
+    //draw_grid_background();
+    //LCD_Fill_Buffer(0);
+
+    draw_grid_background();
     
     // Draw game border
-    LCD_Draw_Rect(0, 0, SCREEN_WIDTH, 7, 14, 1);
-    LCD_Draw_Rect(0, SCREEN_HEIGHT - 7, SCREEN_WIDTH, 7, 14, 1);
-    LCD_Draw_Rect(0, 0, 7, SCREEN_HEIGHT, 14, 1);
-    LCD_Draw_Rect(SCREEN_WIDTH - 7, 0, 7, SCREEN_HEIGHT, 14, 1);
+    LCD_Draw_Rect(0, 0, SCREEN_WIDTH, 7, 13, 1);
+    LCD_Draw_Rect(0, SCREEN_HEIGHT - 7, SCREEN_WIDTH, 7, 13, 1);
+    LCD_Draw_Rect(0, 0, 7, SCREEN_HEIGHT, 13, 1);
+    LCD_Draw_Rect(SCREEN_WIDTH - 7, 0, 7, SCREEN_HEIGHT, 13, 1);
 
     // Draw ghost sprite shooting bullets at set position with animation
     Lava_Draw();
@@ -554,7 +558,7 @@ void render_game(void) {
     // Print shield count
     char shield_str[24];
     sprintf(shield_str, "Shield:%d", shield); 
-    LCD_printString(shield_str, 15, 34, 11, 2);
+    LCD_printString(shield_str, 15, 34, 4, 2);
 }
 
 void loading_line_animation(uint16_t x, uint16_t y) {
@@ -581,4 +585,26 @@ void chick_intro_animation (uint16_t x, uint16_t y) {
     }
 
     frame = !frame;
+}
+
+void draw_grid_background (void) {
+    int box_size = 20;
+
+    for (int x = 0; x < SCREEN_WIDTH; x += box_size) {
+        for (int y = 0; y < SCREEN_HEIGHT; y += box_size) {
+            
+            int column = (x - SCREEN_WIDTH) / box_size;
+            int rows = (y - SCREEN_HEIGHT) / box_size;
+
+            uint8_t grid_colour = ((column + rows) % 2 == 0) ? 14:15; 
+
+            int width = box_size;
+            int height = box_size;
+
+            if (x + width > SCREEN_WIDTH) width = SCREEN_WIDTH - x;
+            if (y + height > SCREEN_HEIGHT) width = SCREEN_HEIGHT - y;
+
+            LCD_Draw_Rect(x, y, width, height, grid_colour, 1);
+        }
+    }
 }
