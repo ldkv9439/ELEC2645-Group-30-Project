@@ -226,6 +226,7 @@ int main(void)
     LCD_Refresh(&cfg0);
 
     int startup_animation_color[] = {2,6,3,4,1}; // Red, Yellow, Green, Blue, White
+    
     // Startup animation
     for (int i = 1; i <= 5; i++) {
         LCD_Fill_Buffer(0);  // clear screen each frame
