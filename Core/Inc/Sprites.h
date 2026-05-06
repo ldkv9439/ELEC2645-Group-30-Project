@@ -2,11 +2,7 @@
  * @file Sprites.h
  * @brief Pixel-art sprites for Plants vs Zombies STM32 and Chick Knight game
  *
- * All sprites use the LCD 4-bit colour palette (0-15, 255=transparent).
- * Default palette:
- *   0=Black  1=White   2=Red    3=Green  4=Blue   5=Orange
- *   6=Yellow 7=Pink    8=Purple 9=Navy  10=Gold   11=Violet
- *  12=Brown 13=Grey   14=Cyan  15=Magenta  255=Transparent
+ * All sprites use custom palettes for each specific game
  */
 #ifndef SPRITES_H
 #define SPRITES_H

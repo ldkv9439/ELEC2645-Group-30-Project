@@ -1,23 +1,9 @@
 /**
  * @file PVZEngine.h
- * @brief Main game engine for Plants vs Zombies
- *
- * FLOW:
- *   STATE_PLAYING    – game runs; cursor moves with joystick
- *                      • push joystick (any dir from centre) → STATE_MENU
- *                      • if plant armed: push on empty cell = place it
- *   STATE_MENU       – overlay showing plant list; game PAUSED
- *                      • N/S scroll selection
- *                      • push joystick again → close menu, arm selected plant, back to PLAYING
- *   STATE_GAME_OVER  – zombie reached home
- *   STATE_WIN        – all waves cleared
- *
- * JOYSTICK MAPPING:
- *   Move             – move cursor (in PLAYING) / scroll list (in MENU)
- *   Centre push      – open menu (PLAYING, no plant armed)
- *                    – confirm/close menu (MENU)
- *                    – place plant (PLAYING, plant armed, valid cell)
- *   Any push         – treated as "button press" when released back to CENTRE
+ * @brief Plants vs Zombies game engine header - defines game states, pool sizes,
+ *        sun economy, wave system, and the main engine struct containing all
+ *        game objects (plants, zombies, projectiles, suns), cursor position,
+ *        plant selection state, LED timing, and score/lives tracking.
  */
 
 #ifndef PVZENGINE_H

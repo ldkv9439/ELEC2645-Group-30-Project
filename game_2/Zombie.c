@@ -1,6 +1,8 @@
 /**
  * @file Zombie.c
- * @brief Zombie implementation - sprites drawn at 2x scale
+ * @brief moves left each frame unless eating a plant,
+ *        draws normal or cone zombie sprite at 2x scale with HP bar,
+ *        and provides damage, AABB, and score functions.
  */
 #include "Zombie.h"
 #include "LCD.h"

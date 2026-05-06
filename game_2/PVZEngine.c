@@ -1,6 +1,9 @@
 /**
  * @file PVZEngine.c
- * @brief Plants vs Zombies game engine
+ * @brief Plants vs Zombies game engine - handles game state, plant placement,
+ *        zombie spawning, projectile firing, sun collection, wave management,
+ *        collision detection, LED/buzzer feedback, and rendering.
+ */
  */
 
 #include "PVZEngine.h"
@@ -363,13 +366,16 @@ void PVZEngine_Update(PVZEngine_t* engine, UserInput input) {
     PVZ_MoveCursor(engine, input);
 
     if (click_event) {
-        if (engine->plant_armed) {
-            PVZ_TryPlace(engine);
-        } else {
-            engine->state = STATE_MENU;
-            PVZ_Beep(SFX_MENU_OPEN);
+    if (engine->plant_armed) {
+        if (!PVZ_TryPlace(engine)) {
+            // placement failed (no sun, occupied, etc) — treat second click as cancel
+            engine->plant_armed = 0;
         }
+    } else {
+        engine->state = STATE_MENU;
+        PVZ_Beep(SFX_MENU_OPEN);
     }
+}
 
     s_prev_dir = input.direction;
 

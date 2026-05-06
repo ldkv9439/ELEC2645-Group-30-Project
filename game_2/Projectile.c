@@ -1,6 +1,7 @@
 /**
  * @file Projectile.c
- * @brief Pea projectile - drawn at 2x scale
+ * @brief Pea projectile - fires, moves right across the screen, draws normal
+ *        or blue pea sprite based on type, and provides AABB for collision detection.
  */
 #include "Projectile.h"
 #include "LCD.h"
