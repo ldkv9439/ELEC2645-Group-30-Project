@@ -1,291 +1,24 @@
 /**
- * @file coins.c
- * @brief Coin object implementation 
+ * @file Character.c
+ * @brief Character object implementation 
  */
  
 #include "Character.h"
-#include "stm32l4xx_hal.h"
-#include "ghost.h"
-#include "tim.h"  
-#include "Buzzer.h"
-#include "level.h"
-#include "PWM.h"    // For PWM control of the LED 
 #include "coins.h"
-#include "ghost.h"
+#include "stm32l4xx_hal.h"
+#include "Buzzer.h"
+#include "PWM.h"  
+#include "LCD.h"
+#include "Level.h"
+#include "Coins.h"
+#include "Ghost.h"
+#include "Sprites.h"
 
+#include <limits.h>
 #include <stdint.h>
-
 
 extern Buzzer_cfg_t buzzer_cfg;
 extern PWM_cfg_t pwm_cfg;
-
-// ===== ANIMATION SPRITES =====
-
-/**
- * @brief IDLE animation - character stays static 
- * 16x16 pixel sprite showing idle
- */
-const uint8_t CharacterIDLE[16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,5,5,5,255,255,255,255,255,255,255},
-    {255,255,255,255,5,5,1,6,10,5,5,255,255,255,255,255},
-    {255,255,255,5,1,1,6,6,6,6,10,5,255,255,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,5,6,0,6,6,6,0,6,6,10,5,255,255,255},
-    {255,5,6,6,0,6,6,6,0,6,6,6,10,5,255,255},
-    {255,5,7,7,0,5,5,6,0,7,7,6,10,5,255,255},
-    {255,5,7,7,6,6,6,6,6,7,7,6,10,5,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,255,5,10,10,10,10,10,5,10,10,5,255,5,255},
-    {255,255,255,5,10,6,6,6,10,5,5,10,10,5,5,255},
-    {255,255,255,255,5,6,6,6,6,10,10,10,5,5,255,255},
-    {255,255,255,255,255,5,12,5,5,5,12,5,255,255,255,255},
-    {255,255,255,255,255,255,12,255,255,255,12,255,255,255,255,255},
-    {255,255,255,255,255,12,12,12,255,12,12,12,255,255,255,255}
-};
-
-/**
- * @brief WALK LEFT animation
- * 16x16 pixel sprite showing character facing left side 
- */
-const uint8_t CharacterWALKLEFT[16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,5,5,5,255,255,255,255,255,255,255},
-    {255,255,255,255,5,5,1,6,10,5,5,255,255,255,255,255},
-    {255,255,255,5,1,1,6,6,6,6,10,5,255,255,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,5,6,0,6,6,6,0,6,6,10,5,255,255,255},
-    {255,5,6,6,0,6,6,6,0,6,6,6,10,5,255,255},
-    {255,5,7,7,0,5,5,6,0,7,7,6,10,5,255,255},
-    {255,5,7,7,6,6,6,6,6,7,7,6,10,5,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,255,5,10,10,10,10,10,5,10,10,5,255,255,5},
-    {255,255,255,5,10,6,6,6,10,5,5,10,10,5,5,255},
-    {255,255,255,255,5,6,6,6,6,10,10,10,5,5,255,255},
-    {255,255,255,255,255,5,12,5,5,5,12,5,255,255,255,255},
-    {255,255,255,255,255,255,12,255,255,255,12,255,255,255,255,255},
-};
-
-/**
- * @brief WALK RIGHT first animation
- * 16x16 pixel sprite showing character facing right side 
- */
-const uint8_t CharacterWALKRIGHT_1[16][16] = {
-    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,5,5,5,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,255,5,5,5,255,255,255,255,255,255},
-    {255,255,255,255,5,10,6,6,6,6,1,1,5,255,255,255},
-    {255,255,255,5,10,6,6,6,6,6,6,6,6,5,255,255},
-    {255,255,255,5,10,6,6,0,6,6,6,0,6,5,255,255},
-    {255,255,5,10,6,6,6,0,6,6,6,0,6,6,5,255},
-    {255,255,5,10,6,7,7,0,6,5,5,0,7,7,5,255},
-    {255,255,5,10,6,7,7,6,6,6,6,6,7,7,5,255},
-    {255,255,255,5,10,6,6,6,6,6,6,6,6,5,255,255},
-    {5,255,255,5,10,10,5,10,10,10,10,10,5,255,255,255},
-    {255,5,5,10,10,5,5,10,6,6,6,10,5,255,255,255},
-    {255,255,5,5,10,10,10,6,6,6,6,5,255,255,255,255},
-    {255,255,255,255,5,12,5,5,5,12,5,255,255,255,255,255},
-    {255,255,255,255,255,12,255,255,255,12,255,255,255,255,255,255},
-    {255,255,255,255,255,12,12,12,255,12,12,12,255,255,255,255}
-};
-
-/**
- * @brief WALK RIGHT second animation
- * 16x16 pixel sprite showing character facing right side 
- */
-const uint8_t CharacterWALKRIGHT_2[16][16] = {
-    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,255,5,5,5,255,255,255,255,255,255},
-    {255,255,255,255,255,5,5,10,6,1,5,5,255,255,255,255},
-    {255,255,255,255,5,10,6,6,6,6,1,1,5,255,255,255},
-    {255,255,255,5,10,6,6,6,6,6,6,6,6,5,255,255},
-    {255,255,255,5,10,6,6,0,6,6,6,0,6,5,255,255},
-    {255,255,5,10,6,6,6,0,6,6,6,0,6,6,5,255},
-    {255,255,5,10,6,7,7,0,6,5,5,0,7,7,5,255},
-    {255,255,5,10,6,7,7,6,6,6,6,6,7,7,5,255},
-    {255,255,255,5,10,6,6,6,6,6,6,6,6,5,255,255},
-    {255,5,255,5,10,10,5,10,10,10,10,10,5,255,255,255},
-    {255,5,5,10,10,5,5,10,6,6,6,10,5,255,255,255},
-    {255,255,5,5,10,10,10,6,6,6,6,5,255,255,255,255},
-    {255,255,255,255,5,12,5,5,5,12,5,255,255,255,255,255},
-    {255,255,255,255,255,12,255,255,255,12,255,255,255,255,255,255},
-};
-
-/**
- * @brief WALK UP & DOWN animation
- * 16x16 pixel sprite showing character moving up and down
- */
-const uint8_t CharacterUPDOWN[16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,5,5,5,255,255,255,255,255,255,255},
-    {255,255,255,255,5,5,1,6,10,5,5,255,255,255,255,255},
-    {255,255,255,5,1,1,6,6,6,6,10,5,255,255,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,5,6,6,0,6,6,6,0,6,6,6,10,5,255,255},
-    {255,5,7,7,0,5,5,6,0,7,7,6,10,5,255,255},
-    {255,5,7,7,6,6,6,6,6,7,7,6,10,5,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,255,5,10,10,10,10,10,5,10,10,5,255,5,255},
-    {255,255,255,5,10,6,6,6,10,5,5,10,10,5,5,255},
-    {255,255,255,255,5,6,6,6,6,10,10,10,5,5,255,255},
-    {255,255,255,255,255,5,12,5,5,5,12,5,255,255,255,255},
-    {255,255,255,255,255,255,12,255,255,255,12,255,255,255,255,255},
-};
-
-/**
- * @brief DASHING animation - Speed lines around character
- * 16x16 pixel sprite showing dashing/moving fast
- */
-const uint8_t CharacterDASHING[16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,6,255,255,255},
-    {255, 6, 255, 255, 255, 255, 255, 255,255,255,255,6,255,255,255,255},
-    {255,255,6,255,255,255,5,5,5,255,255,255,255,255,6,255},
-    {6,255,255,255,5,5,1,6,10,5,5,255,255,255,255,255},
-    {255,6,255,5,1,1,6,6,6,6,10,5,255,255,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,5,6,0,6,6,6,0,6,6,10,5,255,255,255},
-    {255,5,6,0,0,0,6,0,0,0,6,6,10,5,255,255},
-    {255,5,7,7,0,5,5,6,0,7,7,6,10,5,255,255},
-    {255,5,7,7,6,6,6,6,6,7,7,6,10,5,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,255,5,10,10,10,10,10,5,10,10,5,255,5,255},
-    {255,255,255,5,10,6,6,6,10,5,5,10,10,5,5,255},
-    {255,255,255,255,5,6,6,6,6,10,10,10,5,5,255,255},
-    {255,255,255,255,255,5,12,5,5,5,12,5,255,255,255,255},
-    {255,255,255,255,255,255,12,255,255,255,12,255,255,255,255,255},
-};
-
-
-// ===== STATIC SPRITES =====
-
-/**
- * @brief Chick Sprite in GAME_START_PAGE
- * 16x16 pixel sprite showing a chick
- */
-const uint8_t CharacterMAINPAGE[16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,6,255,255,255},
-    {255, 6, 255, 255, 255, 255, 255, 255,255,255,255,6,255,255,255,255},
-    {255,255,6,255,255,255,5,5,5,255,255,255,255,255,6,255},
-    {6,255,255,255,5,5,1,6,10,5,5,255,255,6,255,255},
-    {255,6,255,5,1,1,6,6,6,6,10,5,255,255,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,5,6,255,6,6,6,255,6,6,10,5,255,255,255},
-    {255,5,6,255,6,255,6,255,6,255,6,6,10,5,255,255},
-    {255,5,7,7,6,5,5,6,6,7,7,6,10,5,255,255},
-    {255,5,7,7,6,6,6,6,6,7,7,6,10,5,255,255},
-    {255,255,5,6,6,6,6,6,6,6,6,10,5,255,255,255},
-    {255,255,255,5,10,10,10,10,10,5,10,10,5,255,5,255},
-    {255,255,255,5,10,6,6,6,10,5,5,10,10,5,5,255},
-    {255,255,255,255,5,6,6,6,6,10,10,10,5,5,255,255},
-    {255,255,255,255,255,5,12,5,5,5,12,5,255,255,255,255},
-    {255,255,255,255,255,255,12,255,255,255,12,255,255,255,255,255}
-};
-
-/**
- * @brief Egg Sprite in GAME_WIN
- * 16x16 pixel sprite showing a fried chicken
- */
-const uint8_t CharacterWINPAGE [16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,255,255,12,12,12,12,12,255,255,255},
-    {255,255,255,255,255,255,255,12,12,12,12,12,12,12,255,255},
-    {255,255,255,255,255,255,255,12,12,12,12,12,12,12,255,255},
-    {255,255,255,255,255,255,12,12,12,12,12,12,12,12,255,255},
-    {255,255,255,255,255,255,12,12,12,12,12,12,12,12,255,255},
-    {255,255,255,255,255,12,12,12,12,12,12,12,12,12,255,255},
-    {255,255,255,255,255,12,12,12,12,12,12,12,12,12,255,255},
-    {255,255,255,255,255,12,12,12,12,12,12,12,12,255,255,255},
-    {255,255,255,255,255,12,12,12,12,12,12,12,255,255,255,255},
-    {255,255,255,255,1,1,12,12,12,12,255,255,255,255,255,255},
-    {255,255,255,1,1,1,255, 255,255,255,255,255,255,255,255,255},
-    {255,1,1,1,1,255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,1,1,1,255,255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,255,1,1,255,255, 255, 255,255,255,255,255,255,255,255,255},
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255}
-};
-
-/**
- * @brief Egg Sprite in GAME_OVER
- * 16x16 pixel sprite showing an egg
- */
-const uint8_t CharacterLOSEPAGE [16][16] = {
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255,255,255,255,255,255,1,1,1,1,1,255,255,255,255,255},
-    {255,255,255,255,1,1,1,1,1,1,1,1,255,255,255,255},
-    {255,255,255,1,1,1,1,10,6,6,1,1,1,255,255,255},
-    {255,255,1,1,1,1,10,10,6,6,1,1,1,1,255,255},
-    {255,255,1,1,1,10,255,255,6,255,255,6,1,1,1,255},
-    {255,1,1,1,1,10,10,255,10,10,255,10,1,1,1,255},
-    {255,1,1,1,1,10,10,10,10,10,10,10,1,1,1,255},
-    {255,255,1,1,1,1,10,10,10,10,10,1,1,1,1,255},
-    {255,255,255,1,1,1,1,1,1,1,1,1,1,1,255,255},
-    {255,255,255,255,255,1,1,1,1,1,1,1,255,255,255,255},
-    {255,255,255,255,255,1,1,1,255,1,1,1,255,255,255,255},
-    {255,255,255,255,1,1,1,1,255,1,1,1,1,255,255,255},
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255},
-    {255, 255, 255, 255, 255, 255, 255, 255,255,255,255,255,255,255,255,255}
-};
-
-void gameover_melody(void)
-{
-    printf("\nPlaying Pacman melody...\n");
-
-    uint16_t melody[] = {
-        NOTE_B4, NOTE_B5, NOTE_FS5, NOTE_DS5,
-        NOTE_B5, NOTE_FS5, NOTE_DS5, NOTE_C5,
-        NOTE_C6, NOTE_G6, NOTE_E6, NOTE_C6, NOTE_G6, NOTE_E6
-    };
-
-    // Note durations: 4 = quarter, 8 = eighth, 1 = whole (note duration is base_duration / noteDurations[i])
-    uint8_t noteDurations[] = {
-        16, 16, 16, 16, 
-        32, 16, 8, 16, 
-        16, 16, 16, 32, 16, 8
-    };
-
-    uint16_t tempo = 105;
-    uint16_t wholenote = (60000 * 4) / tempo; // delay for a quarter note in ms
-
-    uint16_t totalNotes = sizeof(noteDurations) / sizeof(noteDurations[0]);
-    
-    // The loop now runs for 10 notes
-    for (int iNote = 0; iNote < totalNotes; iNote++) {
-      
-        uint16_t duration;
-
-        if (noteDurations[iNote] > 0) {
-            duration = wholenote / noteDurations[iNote];
-        } else {
-            duration = (wholenote / (-noteDurations[iNote])) * 1.5; // Default to quarter note duration for rests
-        }
-
-        buzzer_note(&buzzer_cfg, melody[iNote], 50); // Play the note at 50% duty cycle
-        HAL_Delay(duration*0.9);
-        
-        buzzer_off(&buzzer_cfg);
-        HAL_Delay(duration*0.1); 
-    }
-}
-
-void start_melody (void) {
-    // Play notes with sharps (chromatic scale from C4 to C5)
-    int chromatic[] = {
-        NOTE_C4, NOTE_CS4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4,
-        NOTE_FS4, NOTE_G4, NOTE_GS4, NOTE_A4, NOTE_AS4, NOTE_B4, NOTE_C5
-    };
-
-    for (int i = 0; i < 13; i++) {
-        buzzer_note(&buzzer_cfg, chromatic[i], 50);
-        HAL_Delay(200);
-    }
-
-    buzzer_off(&buzzer_cfg);
-}
 
 /**
  * @brief Get character state name
@@ -296,23 +29,6 @@ const char* get_char_state_name(CharacterState_t state) {
         case CHAR_WALKING: return "WALK";
         case CHAR_DASHING: return "DASH";
         default:           return "???";
-    }
-}
-
-/**
- * @brief Get game state name
- */
-const char* get_game_state_name(GameState_t state) {
-    switch (state) {
-        case GAME_START_PAGE:  return "START";
-        case GAME_LEVEL_PAGE:  return "LEVEL";
-        case GAME_PLAYING:     return "PLAYING";
-        case GAME_WIN:         return "WIN";
-        case GAME_PAUSE:       return "PAUSE";
-        case GAME_LOSE_PAGE:   return "LOSE";
-        case GAME_REWARD_PAGE: return "REWARD";
-        case GAME_OVER:        return "OVER";
-        default:               return "???";
     }
 }
 
@@ -344,6 +60,7 @@ void Character_Update(Character_t* character, Joystick_t* joy, uint8_t dash_pres
     
     // Initialize led blink time
     static uint32_t last_led_blink_time = 0;
+
     // Initialize led flag to set state of led
     static uint8_t led_on = 0;
 
@@ -370,9 +87,10 @@ void Character_Update(Character_t* character, Joystick_t* joy, uint8_t dash_pres
         buzzer_note(&buzzer_cfg, NOTE_A6, 50);
     }
     
-    // Handle red and yellow LED blinking when dashing / collision with ghost
+    // Handle red LED blinking when dashing / collision with ghost
     uint32_t current_time = HAL_GetTick();
 
+    // Red LED blink fast when character dash
     if (character->dash_counter > 0) {
         if (current_time - last_led_blink_time >= 50){
             led_on = !led_on;
@@ -385,9 +103,10 @@ void Character_Update(Character_t* character, Joystick_t* joy, uint8_t dash_pres
 
             last_led_blink_time = current_time;
         }
+    // Red LED blink slow when character collides with ghosts
     } else if (character->collision_counter > 0) {
         if (current_time - last_led_blink_time >= 500){
-        led_on = !led_on;
+            led_on = !led_on;
 
             if (led_on) {
                 PWM_SetDuty(&pwm_cfg, 100);
@@ -421,25 +140,33 @@ void Character_Update(Character_t* character, Joystick_t* joy, uint8_t dash_pres
     int16_t new_y = character->y + (move_y * current_speed);
     
     // Clamping character sprite inside game border
-    if (new_x < 25) new_x = 25;
-    if (new_x > 215) new_x = 215;
-    if (new_y < 70) new_y = 70;
-    if (new_y > 215) new_y = 215;
+    if (new_x < CHAR_MIN_X) new_x = CHAR_MIN_X;
+    if (new_x > CHAR_MAX_X) new_x = CHAR_MAX_X;
+    if (new_y < CHAR_MIN_Y) new_y = CHAR_MIN_Y;
+    if (new_y > CHAR_MAX_Y) new_y = CHAR_MAX_Y;
 
     // Handle collision betwen the character and the ghosts
-    int ghost_radius = 9;
-    int character_radius = 10;
+    int ghost_radius = NORMAL_GHOST_COLLISION_RADIUS;
+    int ghost_half = NORMAL_GHOST_HALF;
 
     if (level_state == BOSSLEVEL) {
-        ghost_radius = 27;
+        ghost_radius = BOSS_GHOST_COLLISION_RADIUS;
+        ghost_half = BOSS_GHOST_HALF;
     }
 
     if (character->collision_counter == 0){
         for (int i=0; i < ghost_count; i++){
-            if (Circle_Overlap(new_x, new_y, character_radius, ghosts[i].x, ghosts[i].y, ghost_radius)) {
+
+            // Find center of ghost
+            int ghost_center_x = ghosts[i].x + ghost_half;
+            int ghost_center_y = ghosts[i].y + ghost_half;
+
+            // Change character speed to 1 (slower)
+            if (Circle_Overlap(character->x, character->y, CHAR_COLLISION_RADIUS, ghost_center_x, ghost_center_y, ghost_radius)) {
                 character->collision_counter = CHAR_COLLIDE_DURATION;
                 new_x = character->x + (move_x * 1);
                 new_y = character->y + (move_y * 1);
+                break;
             }
         } 
     }
@@ -488,8 +215,8 @@ void Character_Update(Character_t* character, Joystick_t* joy, uint8_t dash_pres
  */
 void Character_Draw(Character_t* character) {
     
-    int16_t x_pos = character->x - 16;  
-    int16_t y_pos = character->y - 16;
+    int16_t x_pos = character->x - CHAR_HALF;  
+    int16_t y_pos = character->y - CHAR_HALF;
     
     switch (character->state) {
         case CHAR_IDLE:

@@ -103,6 +103,16 @@ PWM_cfg_t pwm_cfg = {
     .setup_done = 0
 };
 
+// Configure second PWM (yellow LED) to use TIM4 Channel 3 (current hardware setup)
+PWM_cfg_t pwm_cfg_2 = {
+    .htim = &htim4,
+    .channel = TIM_CHANNEL_3,
+    .tick_freq_hz = 1000000,  // 1MHz timer clock (prescaler = 79 with 80MHz input)
+    .min_freq_hz = 10,
+    .max_freq_hz = 50000,
+    .setup_done = 0
+};
+
 // ===== MENU SYSTEM STATE =====
 MenuSystem menu;
 
@@ -181,7 +191,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 int main(void)
 {
     /* MCU Configuration */
-`    HAL_Init();
+    HAL_Init();
     SystemClock_Config();
     PeriphCommonClock_Config();
 

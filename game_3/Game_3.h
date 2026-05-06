@@ -63,6 +63,9 @@
 #define PWM_Pin GPIO_PIN_6
 #define PWM_GPIO_Port GPIOB
 
+#define PWM_Pin_2 GPIO_PIN_8
+#define PWM_GPIO_Port GPIOB
+
 /* Function Prototypes ---------------------------------------------------*/
 MenuState Game3_Run(void);
 

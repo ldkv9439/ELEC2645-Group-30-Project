@@ -7,37 +7,38 @@
 #ifndef COINS_H
 #define COINS_H
 
-#include "Joystick.h"
-#include "LCD.h"
-#include <stdint.h>
-#include <stdlib.h>
 #include "Character.h"
 
-#define COINS_MAX 10    // Maximum number of coins
-#define COINS_RADIUS 4  // Radius of coins
-#define MIN_X 20
-#define MAX_X 200
-#define MIN_Y 70
-#define MAX_Y 200
-#define COINS_SPACING 20
+#include <stdint.h>
+
+// ===== CONSTANTS =====
+
+// ---- Boundaries ----
+#define COINS_MIN_X 20      // Minimum x-axis boundary
+#define COINS_MAX_X 200     // Maximum x-axis boundary
+#define COINS_MIN_Y 70      // Minimum y-axis boundary
+#define COINS_MAX_Y 200     // Maximum y-axis boundary
+
+// ---- Limits ----
+#define COINS_MAX 10        // Maximum number of coins
+
+// ---- Size ----
+#define COINS_RADIUS 4      // Radius of coins
+#define COINS_SPACING 20    // Spacing between coins spawned
+
+// ===== DATA STRUCTURES =====
+
 /**
  * @struct Coins_t
  * @brief Coins object containing position and flag when character collects it
  */
 typedef struct {
-    int x;              // Coins X position
-    int y;              // Coins Y position
-    uint8_t collect;    // Coins collection flag
+    int16_t x;              // Coins X position
+    int16_t y;              // Coins Y position
+    uint8_t collect;        // Check if a coin has been collected
 } Coins_t;
 
-/**
- * @struct Coordinates_t
- * @brief Setting coordinates of coins
- */
-typedef struct {
-    int x;              // Coins X coordinate
-    int y;              // Coins Y coordinate
-} Coordinates_t;
+// ===== FUNCTIONS =====
 
 /**
  * @brief Reset the number of coins remaining and set all coins have been collected
@@ -64,7 +65,9 @@ void Coins_Update(Character_t* character);
 */
 void Coins_Draw(void);
 
-extern uint8_t Circle_Overlap(uint16_t x1, uint16_t y1, uint16_t r1, uint16_t x2, uint16_t y2, uint16_t r2);
+// Collision checker
+uint8_t Circle_Overlap(uint16_t x1, uint16_t y1, uint16_t r1, uint16_t x2, uint16_t y2, uint16_t r2);
+
 extern int coins_remaining;
 extern uint16_t score;
 

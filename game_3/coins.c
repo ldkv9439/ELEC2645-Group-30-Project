@@ -3,14 +3,15 @@
  * @brief Coin object implementation 
  */
 
+#include "Coins.h"
 #include "coins.h"
-#include "PWM.h"
-#include "ghost.h"
-#include "lava.h"
-#include "level.h"
-#include "tim.h"
+#include "stm32l4xx_hal.h"
 #include "Buzzer.h"
+#include "PWM.h"
 #include "LCD.h"
+#include "Level.h"
+#include "Ghost.h"
+#include "Flame.h"
 #include "Character.h"
 
 #include <stdint.h>
@@ -19,13 +20,14 @@
 extern Buzzer_cfg_t buzzer_cfg;
 extern PWM_cfg_t pwm_cfg_2;
 
-Coins_t coins [COINS_MAX];
+static Coins_t coins [COINS_MAX];
+
 int coins_remaining = 0;
 uint16_t score = 0;
 
 // Function to detect collision between two circles based on its radius
 uint8_t Circle_Overlap(uint16_t x1, uint16_t y1, uint16_t r1,
-                            uint16_t x2, uint16_t y2, uint16_t r2)
+                        uint16_t x2, uint16_t y2, uint16_t r2)
 {
     int32_t dx = (int32_t)x2 - (int32_t)x1;
     int32_t dy = (int32_t)y2 - (int32_t)y1;
@@ -36,6 +38,7 @@ uint8_t Circle_Overlap(uint16_t x1, uint16_t y1, uint16_t r1,
     return (dist_squared <= radii_sum_squared) ? 1 : 0;
 }
 
+// Buzzer sound when character collects coins
 void coins_melody (void) {
     buzzer_note(&buzzer_cfg, NOTE_G7, 40);
     HAL_Delay(20);
@@ -55,54 +58,71 @@ void Coins_Reset (void) {
 }
 
 void Coins_Add (int amount) {
-    // Add coins based on the amount set in each level
+    // Add coins based on the amount set in each level in random position within boundaries
     coins_remaining = amount;
     
-    int ghost_radius = 20;
-    int lava_radius = 20;
+    int ghost_radius = NORMAL_GHOST_ADD_RADIUS;
+    int ghost_half = NORMAL_GHOST_HALF;
 
     if (level_state == BOSSLEVEL) {
-        ghost_radius = 45;
+        ghost_radius = BOSS_GHOST_ADD_RADIUS;
+        ghost_half = BOSS_GHOST_HALF;
     }
 
     for (int i = 0; i < amount; i++) {
 
         uint8_t coins_placed = 0;
         int tries = 0;
-        int x = MIN_X + (rand () % (MAX_X - MIN_X));
-        int y = MIN_Y + (rand () % (MAX_Y - MIN_Y));
+        int x = COINS_MIN_X + (rand () % (COINS_MAX_X - COINS_MIN_X));
+        int y = COINS_MIN_Y + (rand () % (COINS_MAX_Y - COINS_MIN_Y));
 
+        // Check collision between spawned coins with other coins, ghost, flame and character sprite
         while(!coins_placed && tries < 100) {
-            x = MIN_X + (rand () % (MAX_X - MIN_X));
-            y = MIN_Y + (rand () % (MAX_Y - MIN_Y));
+            x = COINS_MIN_X + (rand () % (COINS_MAX_X - COINS_MIN_X));
+            y = COINS_MIN_Y + (rand () % (COINS_MAX_Y - COINS_MIN_Y));
 
             int collision = 0;
 
+            // Collision between coins
             for (int j = 0; j < i; j++) {
-                if (Circle_Overlap(x, y, COINS_SPACING, coins[j].x, coins[j].y, COINS_SPACING)) {
+                if (Circle_Overlap(x, y, COINS_RADIUS, coins[j].x, coins[j].y, COINS_SPACING)) {
                     collision = 1;
                     break;
                 }
             }
 
+            // Collision with ghosts
             for (int g = 0; g < ghost_count; g++) {
-                if (Circle_Overlap(x, y, COINS_SPACING, ghosts[g].x, ghosts[g].y, ghost_radius)) {
+
+                int ghost_center_x = ghosts[g].x + ghost_half;
+                int ghost_center_y = ghosts[g].y + ghost_half;
+
+                if (Circle_Overlap(x, y, COINS_RADIUS, ghost_center_x, ghost_center_y, ghost_radius)) {
                     collision = 1;
                     break;
                 }
             }
 
-            for (int h = 0; h < LAVA_MAX; h++) {
-                if (Circle_Overlap(x, y, COINS_SPACING, lava[h].x, lava[h].y, lava_radius)) {
+            // Collision with flame
+            for (int h = 0; h < FLAME_MAX; h++) {
+
+                if (!flame[h].active) continue;
+
+                int flame_center_x = flame[h].x + FLAME_SIZE_HALF;
+                int flame_center_y = flame[h].y + FLAME_SIZE_HALF;
+
+                if (Circle_Overlap(x, y, COINS_RADIUS, flame_center_x, flame_center_y, FLAME_ADD_RADIUS)) {
                     collision = 1;
                     break;
                 }
             }
 
-            if (Circle_Overlap(x, y, COINS_SPACING, game_character.x, game_character.y, 16)) {
+            // Collision with character
+            if (Circle_Overlap(x, y, COINS_RADIUS, game_character.x, game_character.y, CHAR_HALF)) {
                 collision = 1;
             }
 
+            // Place coins if there is no overlapping with other objects
             if (!collision) {
                 coins_placed = 1;
             }
@@ -124,7 +144,7 @@ void Coins_Update (Character_t* character) {
 
     for (int i = 0; i < COINS_MAX; i++) {
         // Check collision between the character and coins
-        if(!coins[i].collect && Circle_Overlap(character->x, character->y, 16, coins[i].x, coins[i].y, COINS_RADIUS)) {
+        if(!coins[i].collect && Circle_Overlap(character->x, character->y, CHAR_HALF, coins[i].x, coins[i].y, COINS_RADIUS)) {
             coins[i].collect = 1;
             coins_remaining--;
 
@@ -156,7 +176,7 @@ void Coins_Draw (void) {
     // Color: gold (10 in 4-bit color), filled (1)
     for (int i =0; i < COINS_MAX; i++) {
         if(!coins[i].collect) {
-            LCD_Draw_Circle(coins[i].x, coins[i].y, 4, 10, 1);
+            LCD_Draw_Circle(coins[i].x, coins[i].y, COINS_RADIUS, 10, 1);
         }
     }
 }
