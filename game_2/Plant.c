@@ -99,7 +99,7 @@ void Plant_Draw(Plant* plant) {
             LCD_Draw_Sprite_Scaled(plant->x, plant->y,
                 EXPLOSION_ROWS, EXPLOSION_COLS,
                 (const uint8_t*)SPRITE_EXPLOSION, PLANT_SCALE);
-                plant->explode_timer--;
+                plant->active = 0;  // cherry bomb disappears immediately when exploding
             } 
             else {
             LCD_Draw_Sprite_Scaled(plant->x, plant->y,
