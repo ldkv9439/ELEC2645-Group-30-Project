@@ -19,11 +19,15 @@
  * @struct Projectile_t
  * @brief Single pea projectile
  */
+
+typedef enum {PEA_NORMAL, PEA_BLUE } PeaType;
+
 typedef struct {
     uint8_t  active;   ///< 1 = in flight
     int16_t  x;        ///< Pixel X (left edge)
     int16_t  y;        ///< Pixel Y (top edge)
     int16_t  lane;     ///< Row lane it travels in (for collision optimisation)
+    PeaType   pea_type;    ///< Normal or blue pea 
 } Projectile_t;
 
 /**
@@ -32,8 +36,9 @@ typedef struct {
  * @param x    Starting X pixel
  * @param y    Starting Y pixel
  * @param lane Grid row lane
+ * @param type Pea type (normal or blue)
  */
-void Projectile_Fire(Projectile_t* proj, int16_t x, int16_t y, int16_t lane);
+void Projectile_Fire(Projectile_t* proj, int16_t x, int16_t y, int16_t lane, PeaType type);
 
 /**
  * @brief Advance pea position; deactivate if off screen

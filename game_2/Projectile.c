@@ -9,11 +9,12 @@
 #define SCREEN_WIDTH 240
 #define PEA_SCALE    2
 
-void Projectile_Fire(Projectile_t* proj, int16_t x, int16_t y, int16_t lane) {
+void Projectile_Fire(Projectile_t* proj, int16_t x, int16_t y, int16_t lane, PeaType pea_type) {
     proj->active = 1;
     proj->x      = x;
     proj->y      = y;
     proj->lane   = lane;
+    proj->pea_type   = pea_type;
 }
 
 void Projectile_Update(Projectile_t* proj) {
@@ -24,9 +25,8 @@ void Projectile_Update(Projectile_t* proj) {
 
 void Projectile_Draw(Projectile_t* proj) {
     if (!proj->active) return;
-    LCD_Draw_Sprite_Scaled(proj->x, proj->y,
-        PEA_ROWS, PEA_COLS,
-        (const uint8_t*)SPRITE_PEA, PEA_SCALE);
+    const uint8_t* spr = (proj->pea_type == PEA_BLUE) ? (const uint8_t*)A_SPRITE_PEA : (const uint8_t*)SPRITE_PEA;
+    LCD_Draw_Sprite_Scaled(proj->x, proj->y, PEA_ROWS, PEA_COLS, spr, PEA_SCALE);
 }
 
 AABB Projectile_GetAABB(Projectile_t* proj) {
