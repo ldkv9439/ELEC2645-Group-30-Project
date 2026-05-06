@@ -29,11 +29,11 @@ MenuTest/
 ├── shared/            # Shared menu system & input handling
 │   ├── Menu.h/c
 │   └── InputHandler.h/c
-├── game_1/            # Student 1's game
+├── game_1/            # Game 1 folder
 │   └── Game_1.c
-├── game_2/            # Student 2's game
+├── game_2/            # Game 2 folder
 │   └── Game_2.c
-├── game_3/            # Student 3's game
+├── game_3/            # Game 3 folder
 │   └── Game_3.c
 ├── Joystick/          # Hardware drivers
 ├── PWM/
