@@ -32,11 +32,11 @@ typedef enum {
     PLANT_CHERRY_BOMB  = 5
 } PlantType;
 
-#define COST_PEASHOOTER 100
+#define COST_PEASHOOTER 75
 #define COST_SUNFLOWER   50
 #define COST_WALLNUT     50
 #define COST_A_PEASHOOTER 150
-#define COST_CHERRY_BOMB  25
+#define COST_CHERRY_BOMB  125
 
 #define HP_PEASHOOTER  300
 #define HP_SUNFLOWER   200
@@ -46,8 +46,8 @@ typedef enum {
 
 #define SHOOT_INTERVAL_PEASHOOTER  40
 #define SHOOT_INTERVAL_A_PEASHOOTER  20
-#define SUN_INTERVAL_SUNFLOWER    300
-#define EXPLODE_DURATION_CHERRY_BOMB 30
+#define SUN_INTERVAL_SUNFLOWER    160
+#define EXPLODE_DURATION_CHERRY_BOMB 40
 
 typedef struct {
     PlantType type;

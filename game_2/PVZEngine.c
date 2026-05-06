@@ -32,7 +32,7 @@
 #define SFX_DURATION_MS    60
 
 extern volatile uint8_t joystick_pressed;
-static const uint8_t WAVE_ZOMBIE_COUNT[TOTAL_WAVES] = {3, 6, 8, 10, 12};
+static const uint8_t WAVE_ZOMBIE_COUNT[TOTAL_WAVES] = {3, 7, 9, 12};
 extern Buzzer_cfg_t buzzer_cfg;
 extern PWM_cfg_t pwm_cfg;
 
@@ -42,7 +42,7 @@ extern PWM_cfg_t pwm_cfg;
 static uint32_t g_buzzer_stop = 0;
 
 static void PVZ_Beep(uint32_t freq) {
-    buzzer_tone(&buzzer_cfg, freq, 50);  // fixed: was 40, use 50% volume
+    buzzer_tone(&buzzer_cfg, freq, 50);
     g_buzzer_stop = HAL_GetTick() + SFX_DURATION_MS;
 }
 
@@ -312,7 +312,6 @@ void PVZEngine_Init(PVZEngine_t* engine) {
     engine->spawn_timer   = SPAWN_INTERVAL;
     engine->selected_type = PLANT_PEASHOOTER;
     engine->plant_armed   = 0;
-    engine->current_wave = 4;
     s_sun_fall_timer = SUN_FALL_INTERVAL;
     s_prev_dir       = CENTRE;
     s_cur_frames     = 0;
@@ -472,8 +471,8 @@ static void PVZ_DrawHUD(PVZEngine_t* e) {
     LCD_printString(buf, 42, 2, 8, 2);
     LCD_printString("SCORE:", 80, 2, 12, 2);
     sprintf(buf, "%lu", e->score);
-    LCD_printString(buf, 155, 2, 12, 2);
-    LCD_printString("LV:", 185, 2, 2, 2);
+    LCD_printString(buf, 150, 2, 12, 2);
+    LCD_printString("LV:", 190, 2, 2, 2);
     sprintf(buf, "%d", e->lives);
     LCD_printString(buf, 225, 2, 2, 2);
     LCD_Draw_Line(0, HUD_HEIGHT, SCREEN_WIDTH, HUD_HEIGHT, 13);
@@ -487,11 +486,11 @@ static void PVZ_DrawMenu(PVZEngine_t* e) {
     LCD_printString("N/S:scroll btn:ok", 25, 78, 3, 2);
 
     struct { PlantType t; const char* n; uint16_t c; uint8_t col; } options[] = {
-        { PLANT_PEASHOOTER, "Peashooter 100", COST_PEASHOOTER, 12  },
+        { PLANT_PEASHOOTER, "Peashooter 75", COST_PEASHOOTER, 12  },
         { PLANT_SUNFLOWER,  "Sunflower   50", COST_SUNFLOWER,  12 },
         { PLANT_WALLNUT,    "Wallnut     50", COST_WALLNUT,    12 },
         {PLANT_A_PEASHOOTER, "A.Peashooter 150", COST_A_PEASHOOTER, 12},
-        {PLANT_CHERRY_BOMB,  "Cherry Bomb 150", COST_CHERRY_BOMB, 12}
+        {PLANT_CHERRY_BOMB,  "Cherry Bomb 125", COST_CHERRY_BOMB, 12}
     };
     for (int i = 0; i < 5; i++) {
     int16_t y = 100 + i * 24;
@@ -556,14 +555,14 @@ void PVZEngine_Draw(PVZEngine_t* engine) {
             LCD_Draw_Rect(20, 80, 200, 85, 2, 0);
             LCD_printString("GAME OVER :(", 38, 90, 2, 3);
             { char buf[24]; sprintf(buf, "Score: %lu", engine->score);
-              LCD_printString(buf, 45, 135, 8, 3); }
+              LCD_printString(buf, 40, 135, 8, 3); }
             break;
         case STATE_WIN:
             LCD_Draw_Rect(20, 80, 200, 85, 0, 1);
             LCD_Draw_Rect(20, 80, 200, 85, 3, 0);
             LCD_printString("YOU WIN!", 48, 90, 12, 3);
             { char buf[24]; sprintf(buf, "Score: %lu", engine->score);
-              LCD_printString(buf, 45, 135, 8, 3); }
+              LCD_printString(buf, 40, 135, 8, 3); }
             break;
         case STATE_WAVE_ANNOUNCE:
                 {

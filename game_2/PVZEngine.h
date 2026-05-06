@@ -42,9 +42,9 @@
 #define SUN_FALL_VALUE     25
 
 /* ---- Wave system ---- */
-#define TOTAL_WAVES        5
-#define WAVE_INTERVAL    100
-#define SPAWN_INTERVAL   60
+#define TOTAL_WAVES        4
+#define WAVE_INTERVAL    80
+#define SPAWN_INTERVAL   40
 
 /* ---- Sun collectible ---- */
 typedef struct {

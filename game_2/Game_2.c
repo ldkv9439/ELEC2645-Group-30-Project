@@ -63,26 +63,26 @@ void Game2_DrawBackground(void) {
     LCD_Draw_Rect(0, HUD_HEIGHT, 30, SCREEN_HEIGHT - HUD_HEIGHT, 2, 1);
 
     /* roof */
-    LCD_Draw_Rect(0, HUD_HEIGHT,      34, 12, 3,  1);
-    LCD_Draw_Rect(0, HUD_HEIGHT + 11, 34, 3,  4, 1);
+    LCD_Draw_Rect(0, HUD_HEIGHT,      34, 18, 3,  1);
+    LCD_Draw_Rect(0, HUD_HEIGHT + 18, 34, 5,  4, 1);
 
     /* window */
-    LCD_Draw_Rect(5, 80, 20, 15, 15, 1);
-    LCD_Draw_Rect(5, 80, 20, 15, 5, 0);
-    LCD_Draw_Line(15, 80, 15, 93, 5);
-    LCD_Draw_Line(5, 87, 24, 87, 5);
+    LCD_Draw_Rect(3, 75, 25, 20, 15, 1);
+    LCD_Draw_Rect(3, 75, 25, 20, 5, 0);
+    LCD_Draw_Line(15, 75, 15, 93, 5);
+    LCD_Draw_Line(3, 84, 26, 84, 5);
 
     /* door */
-    LCD_Draw_Rect(5, 130, 20, 28, 5, 1);
-    LCD_Draw_Circle(23, 145, 2, 8, 1);
+    LCD_Draw_Rect(5, 108, 25, 48, 5, 1);
+    LCD_Draw_Circle(26, 132, 2, 8, 1);
 
     /* plant pot */
-    LCD_Draw_Circle(24, 162, 4, 10, 1);
-    LCD_Draw_Rect(21, 165, 7, 5, 5, 1);
+    LCD_Draw_Circle(22, 165, 7, 10, 1);   
+    LCD_Draw_Rect(16, 168, 13, 10, 5, 1);
 
     /* mailbox */
-    LCD_Draw_Rect(24, HUD_HEIGHT + 154, 6, 4, 3, 1);
-    LCD_Draw_Line(27, HUD_HEIGHT + 158, 27, HUD_HEIGHT + 166, 5);
+    LCD_Draw_Rect(13, HUD_HEIGHT + 164, 15, 10, 3, 1);
+    LCD_Draw_Rect(20, HUD_HEIGHT + 174, 3, 17, 5, 1);
 
     /* ===================== STONE BORDER ===================== */
     LCD_Draw_Rect(GRID_ORIGIN_X - 7, GRID_ORIGIN_Y - 7, GRID_COLS * CELL_W + 14, 7,  1, 1);

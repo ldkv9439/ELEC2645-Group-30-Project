@@ -1,6 +1,17 @@
 /**
  * @file Plant.c
- * @brief Plant implementation - sprites drawn at 2x scale
+ * @brief Implements plant behaviour, rendering, and special abilities for PvZ gameplay.
+ *
+ * Handles:
+ * - Initialisation of plant properties (type, position, health, timers)
+ * - Per-frame updates (shooting, sun generation, cherry bomb explosion timing)
+ * - Sprite rendering with 2x scaling and visual effects
+ * - Damage handling and collision bounding boxes
+ *
+ * Special behaviour:
+ * - Peashooters trigger projectile events
+ * - Sunflowers generate sun over time
+ * - Cherry bombs detonate after a delay and remove themselves after exploding
  */
 #include "Plant.h"
 #include "LCD.h"
