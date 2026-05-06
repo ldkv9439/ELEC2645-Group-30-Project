@@ -2,7 +2,7 @@
  * @file Plant.h
  * @brief Plant objects for Plants vs Zombies
  *
- * Grid: 5 rows x 9 cols, each cell 26x44 px.
+ * Grid: 6 rows x 6 cols, each cell 25x30 px.
  * Sprites drawn at 2x scale (16px -> 32px) centred in each cell.
  */
 #ifndef PLANT_H
@@ -20,7 +20,7 @@
 #define GRID_ORIGIN_Y   51
 
 /* ---- Sprite scale ---- */
-#define PLANT_SCALE      2   /* 16px sprite -> 32px on screen */
+#define PLANT_SCALE      2   /* 16px drawn as 32px on screen */
 
 /* ---- Plant types ---- */
 typedef enum {
@@ -42,10 +42,12 @@ typedef enum {
 #define HP_SUNFLOWER   200
 #define HP_WALLNUT     900
 #define HP_A_PEASHOOTER 500
+#define HP_CHERRY_BOMB  200
 
 #define SHOOT_INTERVAL_PEASHOOTER  40
 #define SHOOT_INTERVAL_A_PEASHOOTER  20
 #define SUN_INTERVAL_SUNFLOWER    300
+#define EXPLODE_DURATION_CHERRY_BOMB 60
 
 typedef struct {
     PlantType type;
