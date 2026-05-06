@@ -4,7 +4,7 @@
  *        zombie spawning, projectile firing, sun collection, wave management,
  *        collision detection, LED/buzzer feedback, and rendering.
  */
- */
+
 
 #include "PVZEngine.h"
 #include "InputHandler.h"
@@ -38,6 +38,7 @@ extern volatile uint8_t joystick_pressed;
 static const uint8_t WAVE_ZOMBIE_COUNT[TOTAL_WAVES] = {3, 7, 9, 12};
 extern Buzzer_cfg_t buzzer_cfg;
 extern PWM_cfg_t pwm_cfg;
+extern PWM_cfg_t pwm_cfg_2;
 
 /* ================================================================
  * Buzzer / LED helpers
@@ -57,7 +58,7 @@ static void PVZ_UpdateBuzzer(void) {
 }
 
 static void PVZ_LED_Flash(PVZEngine_t* e) {
-    PWM_SetDuty(&pwm_cfg, 200);
+    PWM_SetDuty(&pwm_cfg, 100);
     e->led_off_tick = HAL_GetTick() + LED_FLASH_MS;
 }
 
@@ -65,16 +66,22 @@ static void PVZ_UpdateLED(PVZEngine_t* e) {
     uint8_t eating = 0;
     for (int i = 0; i < MAX_ZOMBIES; i++)
         if (e->zombies[i].active && e->zombies[i].eating) { eating = 1; break; }
+
     if (eating) {
-        PWM_SetDuty(&pwm_cfg, 200);
+        // blink red LED using HAL tick
+        uint8_t blink = (HAL_GetTick() / 200) % 2;  // toggles every 200ms
+        PWM_SetDuty(&pwm_cfg_2, blink ? 100 : 0);
+        PWM_SetDuty(&pwm_cfg, 0);   // green off
         e->led_off_tick = 0;
     } else if (e->led_off_tick) {
         if ((int32_t)(HAL_GetTick() - e->led_off_tick) >= 0) {
-            PWM_SetDuty(&pwm_cfg, 0);
+            PWM_SetDuty(&pwm_cfg, 0);    // green off
             e->led_off_tick = 0;
         }
+        PWM_SetDuty(&pwm_cfg_2, 0);     // red off
     } else {
         PWM_SetDuty(&pwm_cfg, 0);
+        PWM_SetDuty(&pwm_cfg_2, 0);
     }
 }
 
