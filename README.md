@@ -1,7 +1,16 @@
-# Unit 4.1 Menu Template
+# ELEC2645 Group 30 — STM32 Mini Game Console - Final Project
 
-A collaborative game development framework for your Unit 4 Group Project, demonstrating how multiple students can implement their own games within a shared menu system and game loop architecture.
+A collaborative embedded game console built on the STM32L476 microcontroller for the ELEC2645 Unit 4 Group Project. Three independently developed games are unified under a shared menu system and rendered on an ST7789V2 LCD display.
 
+## Authors
+
+| Game | Title | Author |
+|------|-------|--------|
+| Game 1 | **Maze Runner** | Anika Sandwar - mjsf7639|
+| Game 2 | **Plants vs Zombies** | Fatima Hassan Khan - ldkv9439|
+| Game 3 | **Chick Knight** | Aisya Afiqah Binti Mohd Fairoz Akasyah - gphg1759|
+ 
+---
 ## Overview
 
 This project provides:
