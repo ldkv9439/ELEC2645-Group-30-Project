@@ -65,7 +65,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/game_2/Zombie.c
     ${CMAKE_SOURCE_DIR}/game_2/Projectile.c
 
-        # Game 2 PVZ dependencies
+        # Game 3 Chick Knight dependencies
     ${CMAKE_SOURCE_DIR}/game_3/Character.c
     ${CMAKE_SOURCE_DIR}/game_3/Coins.c
     ${CMAKE_SOURCE_DIR}/game_3/Ghost.c
