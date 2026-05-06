@@ -15,17 +15,21 @@ void Plant_Init(Plant* plant, PlantType type, int16_t col, int16_t row) {
     plant->active    = 1;
     plant->grid_col  = col;
     plant->grid_row  = row;
+    plant->shoot_ready = 0;
+    plant->sun_ready   = 0;
+    plant->explode_ready = 0;   
+
     /* Centre sprite horizontally in cell, top-align vertically */
     plant->x = GRID_ORIGIN_X + col * CELL_W + (CELL_W - SPR_W) / 2;
     plant->y = GRID_ORIGIN_Y + row * CELL_H + (CELL_H - SPR_H) / 2;
-    plant->shoot_ready = 0;
-    plant->sun_ready   = 0;
+    
 
     switch (type) {
         case PLANT_PEASHOOTER: plant->hp_max = HP_PEASHOOTER; plant->timer = SHOOT_INTERVAL_PEASHOOTER; break;
+        case PLANT_A_PEASHOOTER: plant->hp_max = HP_A_PEASHOOTER; plant->timer = SHOOT_INTERVAL_A_PEASHOOTER; break;
         case PLANT_SUNFLOWER:  plant->hp_max = HP_SUNFLOWER;  plant->timer = SUN_INTERVAL_SUNFLOWER;    break;
         case PLANT_WALLNUT:    plant->hp_max = HP_WALLNUT;    plant->timer = 0;                         break;
-        default:               plant->hp_max = 100;           plant->timer = 0;                         break;
+        case PLANT_CHERRY_BOMB: plant->hp_max = HP_CHERRY_BOMB; plant->timer = EXPLODE_DURATION_CHERRY_BOMB;                         break;
     }
     plant->hp = plant->hp_max;
 }
@@ -34,6 +38,7 @@ void Plant_Update(Plant* plant) {
     if (!plant->active) return;
     plant->shoot_ready = 0;
     plant->sun_ready   = 0;
+    plant->explode_ready = 0; 
 
     if (plant->timer > 0) {
         plant->timer--;
@@ -41,32 +46,71 @@ void Plant_Update(Plant* plant) {
         if (plant->type == PLANT_PEASHOOTER) {
             plant->shoot_ready = 1;
             plant->timer = SHOOT_INTERVAL_PEASHOOTER;
-        } else if (plant->type == PLANT_SUNFLOWER) {
+        } else if (plant->type == PLANT_A_PEASHOOTER) {
+            plant->shoot_ready = 1;
+            plant->timer = SHOOT_INTERVAL_A_PEASHOOTER;
+        }
+        else if (plant->type == PLANT_SUNFLOWER) {
             plant->sun_ready = 1;
             plant->timer = SUN_INTERVAL_SUNFLOWER;
+        }
+        else if (plant->type == PLANT_CHERRY_BOMB) {
+            plant->explode_ready = 1;
+            plant->active = 0;
         }
     }
 }
 
 void Plant_Draw(Plant* plant) {
-    
+
+    // draw explosion if cherry bomb just exploded, even though plant is now inactive
+    if (!plant->active && plant->type == PLANT_CHERRY_BOMB && plant->explode_ready) {
+    LCD_Draw_Sprite_Scaled(plant->x, plant->y,
+        EXPLOSION_ROWS, EXPLOSION_COLS,
+        (const uint8_t*)SPRITE_EXPLOSION, PLANT_SCALE);
+    return;
+}
+    // if plant is not active, don't draw anything
     if (!plant->active) return;
 
+    // draw sprite based on type
     switch (plant->type) {
-        case PLANT_PEASHOOTER:
+        case PLANT_PEASHOOTER:                             // normal peashooter
             LCD_Draw_Sprite_Scaled(plant->x, plant->y,
                 PEASHOOTER_ROWS, PEASHOOTER_COLS,
                 (const uint8_t*)SPRITE_PEASHOOTER, PLANT_SCALE);
             break;
-        case PLANT_SUNFLOWER:
+        case PLANT_A_PEASHOOTER:                        // advance peashooter
+            LCD_Draw_Sprite_Scaled(plant->x, plant->y,
+                A_PEASHOOTER_ROWS, A_PEASHOOTER_COLS,
+                (const uint8_t*)A_SPRITE_PEASHOOTER, PLANT_SCALE);
+            break;
+        case PLANT_SUNFLOWER:                              // sunflower
             LCD_Draw_Sprite_Scaled(plant->x, plant->y,
                 SUNFLOWER_ROWS, SUNFLOWER_COLS,
                 (const uint8_t*)SPRITE_SUNFLOWER, PLANT_SCALE);
             break;
-        case PLANT_WALLNUT:
+        case PLANT_WALLNUT:                                // wallnut
             LCD_Draw_Sprite_Scaled(plant->x, plant->y,
                 WALLNUT_ROWS, WALLNUT_COLS,
                 (const uint8_t*)SPRITE_WALLNUT, PLANT_SCALE);
+            break;
+        case PLANT_CHERRY_BOMB:                           // cherry bomb
+            LCD_Draw_Sprite_Scaled(plant->x, plant->y,
+                CHERRY_ROWS, CHERRY_COLS,
+                (const uint8_t*)SPRITE_CHERRY, PLANT_SCALE);
+                {
+                // countdown number on sprite
+                char buf[4];
+                uint8_t seconds_left = (plant->timer / 20) + 1;
+                sprintf(buf, "%d", seconds_left);
+                LCD_printString(buf, plant->x + 12, plant->y + 10, 2, 2);
+
+                // flash red overlay in last 1 second
+                if (plant->timer < 20 && (plant->timer % 4 < 2)) {
+                    LCD_Draw_Rect(plant->x, plant->y, SPR_W, SPR_H, 2, 0);
+                }
+            }
             break;
         default: break;
     }

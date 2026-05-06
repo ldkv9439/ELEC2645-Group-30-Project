@@ -61,6 +61,7 @@ typedef struct {
     uint16_t    timer;
     uint8_t     shoot_ready;
     uint8_t     sun_ready;
+    uint8_t     explode_ready;
 } Plant;
 
 void Plant_Init(Plant* plant, PlantType type, int16_t col, int16_t row);
