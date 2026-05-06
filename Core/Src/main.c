@@ -1,6 +1,8 @@
-// ELEC2645 Multi-Game Menu System Demo
-// =====================================
-// A collaborative game development framework with a state machine-based menu system.
+// ELEC2645 Group 30 - Multi-Game System
+// =======================================
+// Initialises all peripherals (LCD, joystick, buzzer, PWM, timers),
+// plays a startup animation and sound, then runs a state-machine loop
+// that routes between the main menu and three games based on user selection.
 // 
 // KEY CONCEPTS:
 // - State Machine: Menu system manages navigation between main menu and 3 games
