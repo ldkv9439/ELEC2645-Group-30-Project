@@ -500,7 +500,7 @@ static void PVZ_DrawMenu(PVZEngine_t* e) {
     if (!unlocked) {
             LCD_printString(options[i].n, 30, y, 8, 2);
             LCD_Draw_Rect(175, y - 2, 45, 17, 0, 1);  // black fill behind hint
-            LCD_printString(options[i].t == PLANT_A_PEASHOOTER ? "W4+" : "W5+", 185, y, 8, 2);
+            LCD_printString(options[i].t == PLANT_A_PEASHOOTER ? "W3+" : "W4+", 185, y, 8, 2);
             continue;
         }
         if (sel) LCD_Draw_Rect(25, y - 2, 195, 24, options[i].col, 0);
