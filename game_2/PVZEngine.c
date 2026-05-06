@@ -271,8 +271,8 @@ static void PVZ_TickAutoSun(PVZEngine_t* e) {
 }
 static uint8_t PVZ_PlantUnlocked(PVZEngine_t* e, PlantType t) {
     switch (t) {
-        case PLANT_A_PEASHOOTER: return e->current_wave >= 4;
-        case PLANT_CHERRY_BOMB:  return e->current_wave >= 5;
+        case PLANT_A_PEASHOOTER: return e->current_wave >= 3;
+        case PLANT_CHERRY_BOMB:  return e->current_wave >= 4;
         default:                 return 1;
     }
 }
