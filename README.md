@@ -17,7 +17,6 @@ This project provides:
 - **Centralized Menu System**: Navigate between 3 independent games
 - **Simple Game Loop**: INPUT → UPDATE → RENDER pattern
 - **Shared Resources**: LCD display, joystick input, buzzer, PWM LED
-- **Student Friendly**: Each student works in their own game folder
 - **No Merge Conflicts**: Shared code stays in `shared/`, each game in its own folder
 
 ## Project Structure
@@ -82,9 +81,6 @@ A top-down 2D arcade survival game where a chicken knight battles ghosts across 
 - **Features:** Circle-based collision system, FSM-driven character animation, lava hazards, ghost bullets
 - **Architecture:** Modular — Character, Coins, Ghost, Bullet, and Level are each independently managed objects
 ---
-## Quick Start
-
-See [README_STUDENTS.md](README_STUDENTS.md) for detailed student guide.
 
 ## Architecture
 
@@ -121,8 +117,9 @@ void GameX_Render(void);    // Called every frame (after Update)
 ## Controls
 
 - **Joystick UP/DOWN**: Navigate menu
-- **BT2 Button**: Available for custom game use
-- **BT3 Button**: Select menu option or custom game use
+- **BTN1 Button**: Exit button for Game 2 and 3
+- **BT2 Button**: Custom game use
+- **BT3 Button (Joystick)**: Used to exit in Game 1, Used in gameplay in Game 2 and 3, Selection for menu
 
 ## Hardware Features
 
