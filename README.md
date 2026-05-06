@@ -40,7 +40,37 @@ MenuTest/
 ├── Buzzer/
 └── CMakeLists.txt
 ```
+## Games
+ 
+### Game 1 — Maze Runner
+Navigate through **5 progressively harder 13×13 mazes** before the clock runs out.
+ 
+- **Controls:** Joystick to move · BT3 to return to menu
+- **Objective:** Reach the exit tile on each level using as few moves as possible
+- **Scoring:** Lowest total move count wins (high score tracked per session)
+- **Difficulty scaling:** Each level reduces the time limit (60 → 35 → 28 → 22 → 18 s) and increases LED brightness
+- **Fail condition:** Time expires → loud fail buzz → restart from Level 1
+### Game 2 — Plants vs Zombies
+A lane-defence game inspired by Plants vs Zombies, using a 6×6 grid with a checkerboard lawn, picket fence, house, and zombie spawn road.
 
+- **Controls:** Joystick to move cursor · Joystick press to open plant menu/place plant· BT1 to return to menu
+- **Objective:** Place different plants to stop waves of zombies from reaching the house
+- **Plants:** Peashooter, Sunflower, Wallnut, Adv Peashooter, and Cherry Bomb — each with unique sun costs and abilities
+- **Zombies:** Normal (200 HP) and Cone (500 HP) types spawning in increasing numbers across waves
+- **Sun economy:** Start with 150 sun; earn more from falling tokens and Sunflowers placed on the grid
+- **Engine:** Custom `PVZEngine` manages plants, zombies, projectiles, sun tokens, cursor, and wave logic in separate modules
+- Runs at **~20 FPS** 
+### Game 3 — Chick Knight
+A top-down 2D arcade survival game where a chicken knight battles ghosts across multiple levels.
+ 
+- **Controls:**
+  - Joystick / BT3 — Move character & start/restart game
+  - BT2 — Dash (temporary speed boost)
+  - BT4 — Pause / Resume
+- **Objective:** Collect coins and survive ghost attacks across escalating levels
+- **Features:** Circle-based collision system, FSM-driven character animation, lava hazards, ghost bullets
+- **Architecture:** Modular — Character, Coins, Ghost, Bullet, and Level are each independently managed objects
+---
 ## Quick Start
 
 See [README_STUDENTS.md](README_STUDENTS.md) for detailed student guide.
