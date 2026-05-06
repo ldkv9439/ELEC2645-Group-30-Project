@@ -17,7 +17,8 @@ void Plant_Init(Plant* plant, PlantType type, int16_t col, int16_t row) {
     plant->grid_row  = row;
     plant->shoot_ready = 0;
     plant->sun_ready   = 0;
-    plant->explode_ready = 0;   
+    plant->explode_ready = 0;
+    plant->explode_timer = 0;
 
     /* Centre sprite horizontally in cell, top-align vertically */
     plant->x = GRID_ORIGIN_X + col * CELL_W + (CELL_W - SPR_W) / 2;
@@ -29,7 +30,8 @@ void Plant_Init(Plant* plant, PlantType type, int16_t col, int16_t row) {
         case PLANT_A_PEASHOOTER: plant->hp_max = HP_A_PEASHOOTER; plant->timer = SHOOT_INTERVAL_A_PEASHOOTER; break;
         case PLANT_SUNFLOWER:  plant->hp_max = HP_SUNFLOWER;  plant->timer = SUN_INTERVAL_SUNFLOWER;    break;
         case PLANT_WALLNUT:    plant->hp_max = HP_WALLNUT;    plant->timer = 0;                         break;
-        case PLANT_CHERRY_BOMB: plant->hp_max = HP_CHERRY_BOMB; plant->timer = EXPLODE_DURATION_CHERRY_BOMB;                         break;
+        case PLANT_CHERRY_BOMB: plant->hp_max = HP_CHERRY_BOMB; plant->timer = EXPLODE_DURATION_CHERRY_BOMB;break;
+        default:              plant->hp_max = 0;           plant->timer = 0;                         break;
     }
     plant->hp = plant->hp_max;
 }
@@ -38,7 +40,9 @@ void Plant_Update(Plant* plant) {
     if (!plant->active) return;
     plant->shoot_ready = 0;
     plant->sun_ready   = 0;
-    plant->explode_ready = 0; 
+
+    if (plant->explode_timer > 0)
+    {plant->explode_timer--;}
 
     if (plant->timer > 0) {
         plant->timer--;
@@ -55,21 +59,15 @@ void Plant_Update(Plant* plant) {
             plant->timer = SUN_INTERVAL_SUNFLOWER;
         }
         else if (plant->type == PLANT_CHERRY_BOMB) {
+            if(!plant->explode_ready) {
             plant->explode_ready = 1;
-            plant->active = 0;
+            plant->explode_timer = 15;}
         }
     }
 }
 
 void Plant_Draw(Plant* plant) {
 
-    // draw explosion if cherry bomb just exploded, even though plant is now inactive
-    if (!plant->active && plant->type == PLANT_CHERRY_BOMB && plant->explode_ready) {
-    LCD_Draw_Sprite_Scaled(plant->x, plant->y,
-        EXPLOSION_ROWS, EXPLOSION_COLS,
-        (const uint8_t*)SPRITE_EXPLOSION, PLANT_SCALE);
-    return;
-}
     // if plant is not active, don't draw anything
     if (!plant->active) return;
 
@@ -96,21 +94,23 @@ void Plant_Draw(Plant* plant) {
                 (const uint8_t*)SPRITE_WALLNUT, PLANT_SCALE);
             break;
         case PLANT_CHERRY_BOMB:                           // cherry bomb
+            if (plant->explode_timer > 0) {
+            // show explosion
+            LCD_Draw_Sprite_Scaled(plant->x, plant->y,
+                EXPLOSION_ROWS, EXPLOSION_COLS,
+                (const uint8_t*)SPRITE_EXPLOSION, PLANT_SCALE);
+                plant->explode_timer--;
+            } 
+            else {
             LCD_Draw_Sprite_Scaled(plant->x, plant->y,
                 CHERRY_ROWS, CHERRY_COLS,
                 (const uint8_t*)SPRITE_CHERRY, PLANT_SCALE);
                 {
-                // countdown number on sprite
-                char buf[4];
-                uint8_t seconds_left = (plant->timer / 20) + 1;
-                sprintf(buf, "%d", seconds_left);
-                LCD_printString(buf, plant->x + 12, plant->y + 10, 2, 2);
-
                 // flash red overlay in last 1 second
                 if (plant->timer < 20 && (plant->timer % 4 < 2)) {
-                    LCD_Draw_Rect(plant->x, plant->y, SPR_W, SPR_H, 2, 0);
+                    LCD_Draw_Rect(plant->x, plant->y, SPR_W, SPR_H, 3, 0);
                 }
-            }
+            }}
             break;
         default: break;
     }

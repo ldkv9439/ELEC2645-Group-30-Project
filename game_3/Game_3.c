@@ -6,7 +6,7 @@
 // A classic a 2D arcade survival game
 //
 // KEY CONCEPTS:
-// - Game objects (Character, Coins, Ghost, Bullet) has their own data and mechanics
+// - Game objects (Character, Coins, Ghost, Bullet, Flame) has their own data and mechanics
 // - Created collision system based on circle's radius
 // - Update/Render separation: game logic updates happen separately from drawing
 //
@@ -24,7 +24,9 @@
 // - Character: Main engine to control the character movement and states
 // - Coins: Handles coins spawning and drawing with position, rendering and collision 
 // - Ghost and Bullet: Handles ghosts and bullets spawning and drawing with position, movement, rendering and collision 
-// - Level: Handles amount of ghosts and coins appearing per level
+// - Flame: Handles flame spawning and drawing with position, rendering and collision 
+// - Level: Handles amount of ghosts, coins and flame appearing per level
+// - State: Update and render each game state
 
 #include "Game_3.h"
 #include "InputHandler.h"
@@ -37,54 +39,32 @@
 #include "usart.h"     // For serial output
 #include "gpio.h"      // GPIO control
 #include "adc.h"       // ADC for joystick input
-#include "rng.h"
-
+#include "rng.h"       // RNG for randomized ball reset
 
 // AUTO-GENERATED STM32 FUNCTION PROTOTYPES - DO NOT EDIT
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 
-
 #include "Buzzer.h"     // Buzzer library
 #include "PWM.h"        // PWM control of the LED 
 #include "LCD.h"        // For LCD demonstration 
-#include "Joystick.h"   // include the Joystick driver functions
+#include "Joystick.h"   // Include the Joystick driver functions
+#include "Level.h"      // To customize each level
+#include "Coins.h"      // Coins object with its system related to game sprite
+#include "Ghost.h"      // Ghost object with its system related to game sprite
+#include "Flame.h"       // Flame object with its system related to game sprite
 #include "Character.h"  // Character (player) object with FSM for game sprite
-#include "ghost.h"      // Ghost object with its system related to game sprite
-#include "coins.h"      // Coins object with its system related to game sprite
-#include "level.h"      // To customize each level
-#include "lava.h"
+#include "State.h"      // Manages game update and rendering
 
 #include <stdint.h>
 #include <stdio.h>
 #include <math.h>
 
-#define SCREEN_WIDTH 240
-#define SCREEN_HEIGHT 240
-
-extern const uint8_t CharacterWALKRIGHT_1[16][16];
-extern const uint8_t CharacterWALKRIGHT_2[16][16];
-extern const uint8_t CharacterMAINPAGE[16][16];
-extern const uint8_t CharacterLOSEPAGE[16][16];
-extern const uint8_t CharacterWINPAGE[16][16];
-
 extern ST7789V2_cfg_t cfg0;
-extern Buzzer_cfg_t buzzer_cfg;  // Buzzer control
-extern PWM_cfg_t pwm_cfg;  // Buzzer control
-extern Joystick_cfg_t joystick_cfg;
-
-// ===== PWM CONFIGURATION =====
-// Configure first PWM (red LED) to use TIM4 Channel 1 (current hardware setup)
-
-// Configure second PWM (yellow LED) to use TIM4 Channel 3 (current hardware setup)
-PWM_cfg_t pwm_cfg_2 = {
-    .htim = &htim4,
-    .channel = TIM_CHANNEL_3,
-    .tick_freq_hz = 1000000,  // 1MHz timer clock (prescaler = 79 with 80MHz input)
-    .min_freq_hz = 10,
-    .max_freq_hz = 50000,
-    .setup_done = 0
-};
+extern Buzzer_cfg_t buzzer_cfg;     // Buzzer control
+extern PWM_cfg_t pwm_cfg;           // LED control
+extern PWM_cfg_t pwm_cfg_2;  
+extern Joystick_cfg_t joystick_cfg; // Joystick control
 
 // ===== CHARACTER FSM VARIABLES =====
 // Global character object
@@ -96,19 +76,10 @@ GameState_t game_state = GAME_START_PAGE;
 // Initial level state when enter enter game playing mode
 LevelState_t level_state = LEVEL1; 
 
-// Initial flag state to see if a level is selected
-static uint8_t status_level = 0; 
-
-// String to store character score
-char score_str[20];
 
 // ===== FUNCTION PROTOTYPES =====
-void update_character(Joystick_t* joy);
-void render_game(void);
-void opening_page(void);
-void loading_line_animation(uint16_t x, uint16_t y);
-void chick_intro_animation(uint16_t x, uint16_t y);
-void win_melody (void);
+void Game3_Update(Joystick_t *joystick_data);
+
 // ===== Main Function =====
 
 /**
@@ -140,21 +111,11 @@ MenuState Game3_Run (void)
     // Initialize Joystick
     Joystick_Init(&joystick_cfg);
     
+    // Select LCD colour palette
     LCD_Set_Palette(PALETTE_AISYA);
+
     // Initialize Character
     Character_Init(&game_character);
-    
-    // Make LCD screen black 
-    LCD_Fill_Buffer(0);   // 0 is stored as black in LCD.h
-    LCD_Refresh(&cfg0);
-
-    // Opening page with animation 
-    uint32_t start_time = HAL_GetTick();          // Start opening page timer
-    while (HAL_GetTick() - start_time < 4000) {   // Runs for 4 seconds
-        opening_page();
-    }
-
-    HAL_Delay(500);   // Delay 500ms
     
     // Initialize PWM for red LED control
     PWM_Init(&pwm_cfg);
@@ -165,19 +126,28 @@ MenuState Game3_Run (void)
     PWM_Init(&pwm_cfg_2);
     PWM_SetDuty(&pwm_cfg_2, 0);
 
+    // Initialize buttons
     Input_Init();
     
     // Ensure LD2 on PA5 starts OFF
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
-    // Set all flags to play buzzer sound in different game states to 0 
-    int start_melody_play = 0;
-    int win_melody_play = 0;
-    int gameover_melody_play = 0;
+    // Clear screen
+    LCD_Fill_Buffer(0);   // 0 is stored as black in LCD.h
+    LCD_Refresh(&cfg0);
 
-    Joystick_t joystick_data;
+    // Opening page with animation 
+    uint32_t start_time = HAL_GetTick();          // Start opening page timer
+    while (HAL_GetTick() - start_time < 4000) {   // Runs for 4 seconds
+        opening_page();
+    }
+
+    HAL_Delay(500);   // Delay 500ms
 
     MenuState exit_state = MENU_STATE_HOME;
+
+    // Joystick data structure to hold readings
+    Joystick_t joystick_data;
 
     // Initialize seed for rand() function
     // Generate different sequence of the random number
@@ -190,395 +160,22 @@ MenuState Game3_Run (void)
         // Read joystick input
         Joystick_Read(&joystick_cfg, &joystick_data);
 
+        // Read buttons
         Input_Read();
+
+        // Turn on LD2 on PA5
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 
         if (current_input.btn1_pressed) {
             exit_state = MENU_STATE_HOME;
             break;  // Exit game loop
         }
 
-        // Turn on LD2 on PA5
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+        Game3_Update(&joystick_data);
 
-        switch (game_state) {
+        HAL_Delay(30);  // only delay for non-playing states
 
-            case GAME_START_PAGE:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-
-                LCD_Fill_Buffer(0);
-                LCD_printString("Chick", 60, 20, 10, 4);
-                LCD_printString("Knight", 50, 60, 10, 4);
-                LCD_Draw_Sprite_Scaled(80, 100, 16, 16, (uint8_t *)CharacterMAINPAGE, 5);
-                LCD_printString("Press Joystick Btn", 15, 200, 1, 2);
-                LCD_printString("To Start", 80, 220, 1, 2);
-
-                LCD_Refresh(&cfg0);
-
-                if (start_melody_play == 0) {
-                    start_melody();         // Play starting melody on buzzer
-                    start_melody_play = 1;  // Change flag to 1
-                }
-
-                if (current_input.btn3_pressed) {
-                    current_input.btn3_pressed = 0; // Clear flag
-
-                    level_state = LEVEL1;         // Set level to Level 1
-                    status_level = 0;             // No level selected
-                    game_state = GAME_LEVEL_PAGE; // Move to level display page
-
-                    start_melody_play = 0;        // Clear flag
-                }
-                break;
-
-            case GAME_LEVEL_PAGE:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-                LCD_Fill_Buffer(0);
-
-                if (level_state == LEVEL1) {
-                    LCD_printString("LEVEL",  40, 70, 1, 6);
-                    LCD_printString("1", 100, 140, 1,6);             
-                } else if (level_state == LEVEL2) {
-                    LCD_printString("LEVEL",  40, 70, 1, 6);
-                    LCD_printString("2", 100, 140, 1,6);
-                } else if (level_state == LEVEL3) {
-                    LCD_printString("LEVEL",  40, 70, 1, 6);
-                    LCD_printString("3", 100, 140, 1,6);
-                } else if (level_state == BOSSLEVEL) {
-                    LCD_printString("BOSS",  45, 70, 1, 6);
-                    LCD_printString("LEVEL", 40, 140, 1,6);
-                }
-                
-                LCD_Refresh(&cfg0);
-                
-                Character_Init(&game_character);  // Initialize all elements in the character
-
-                buzzer_off(&buzzer_cfg);          // Turn off buzzer
-
-                HAL_Delay(2000);  // Runs for 2 seconds
-
-                // Determine next game state based on levels
-                if (level_state == BOSSLEVEL) {
-                  game_state = GAME_REWARD_PAGE;
-                } else {
-                  game_state = GAME_PLAYING;
-                }
-                break;
-            
-            case GAME_PLAYING:
-                PWM_SetDuty(&pwm_cfg_2, 100);
-
-                // Check if no level has been selected yet, switch between levels
-                if (!status_level) {
-                  switch (level_state) {
-                    case LEVEL1:
-                        Level1();
-                        break;
-                    case LEVEL2:
-                        Level2();
-                        break;
-                    case LEVEL3:
-                        Level3();
-                        break;
-                    case BOSSLEVEL:
-                        BossLevel();
-                        break;
-                  }
-                
-                  status_level = 1;
-
-                }
-
-                if (current_input.btn4_pressed) {
-                    current_input.btn4_pressed = 0;
-                    game_state = GAME_PAUSE;
-                    break;
-                }
-
-                update_character(&joystick_data);  
-                Coins_Update(&game_character);
-                Ghost_Update(&game_character);
-                Lava_Update(&game_character);
-                render_game(); 
-
-                // Switch to game lose page if character's life is zero
-                if (life <= 0 && game_state != GAME_LOSE_PAGE) {
-                    life = 0;
-                    game_state = GAME_LOSE_PAGE;
-                } 
-                
-                // Character proceed to the next level if all coins have been collected in that level
-                // Switch to game win page if managed to pass Boss Level
-                if (coins_remaining == 0) {
-                    if (level_state == BOSSLEVEL) {
-                        game_state = GAME_WIN;
-                    } else {
-                        status_level = 0;
-                        level_state++;
-                        game_state = GAME_LEVEL_PAGE;
-                        break;
-                    }
-                }
-
-                LCD_Refresh(&cfg0);
-                break;
-            
-            case GAME_WIN:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-
-                LCD_Fill_Buffer(0);
-                LCD_printString("WINNERWINNER", 10, 30, 10, 3); 
-                LCD_printString("CHICKENDINNER", 10, 70, 10, 3);
-                LCD_Draw_Sprite_Scaled(30, 110, 16, 16, (uint8_t *)CharacterWINPAGE, 5);
-                LCD_printString("SCORE:", 150, 120, 1, 2);
-                sprintf(score_str, "%d", score);
-                LCD_printString(score_str, 160, 150, 1, 3);
-                LCD_printString("Press Joystick Btn", 15, 200, 1, 2);
-                LCD_printString("To Restart", 60, 220, 1, 2);
-
-                LCD_Refresh(&cfg0);
-
-                if (win_melody_play == 0) {
-                    win_melody();         // Play win melody on buzzer
-                    win_melody_play = 1;  // Change flag to 1
-                }
-
-                // Restart game 
-                if (current_input.btn3_pressed) {
-                    current_input.btn3_pressed = 0;    // Clear flag
-                    life = LIFE_MAX;      // Set character's life to maximum
-                    shield = SHIELD_MAX;  // Set character's shield to maximum    
-                    score = 0;            // Clear score
-                    Character_Init(&game_character); // Reset character
-
-                    level_state = LEVEL1; // Set level to Level 1
-                    status_level = 0;
-                    game_state = GAME_LEVEL_PAGE; // Move to level display page
-
-                    win_melody_play = 0;          // Clear flag
-                }
-              break;
-            
-            case GAME_PAUSE:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-
-                LCD_Fill_Buffer(0);
-                LCD_printString("GAME", 50, 70, 1, 6); 
-                LCD_printString("PAUSED", 20, 140, 1, 6); 
-
-                LCD_Refresh(&cfg0);
-
-                if (current_input.btn4_pressed) {
-                  current_input.btn4_pressed = 0;
-                  game_state = GAME_PLAYING;
-                }
-                break;
-
-            case GAME_LOSE_PAGE:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-
-                LCD_Fill_Buffer(0);
-                LCD_printString("GAME", 50, 70, 2, 6); 
-                LCD_printString("OVER", 50, 140, 2, 6); 
-
-                LCD_Refresh(&cfg0);
-
-                HAL_Delay(2000);        // Runs for 2 seconds
-
-                game_state = GAME_OVER; // Switch to game over page
-                break;
-
-            case GAME_REWARD_PAGE:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-
-                LCD_Fill_Buffer(0);
-                LCD_printString("REWARD", 30, 20, 10, 5); 
-                LCD_printString("TIME!", 50, 70, 10, 5); 
-                LCD_printString("You are given either", 30,130, 1, 2); 
-                LCD_printString("LIFE +1 /", 70, 160, 3, 2); 
-                LCD_printString("SHIELD MAX /", 50, 180, 11, 2); 
-                LCD_printString("LIFE MAX", 70, 200, 14, 2); 
-
-                LCD_Refresh(&cfg0);
-
-                int r = rand () % 3;
-                if (r == 0) {
-                    life++; 
-                } else if (r == 1) {
-                    shield = SHIELD_MAX;
-                } else {
-                    life = LIFE_MAX;
-                }
-                
-                HAL_Delay(2000);        // Runs for 2 seconds
-
-                status_level = 0;
-                game_state = GAME_PLAYING;
-                break;
-
-            case GAME_OVER:
-                PWM_SetDuty(&pwm_cfg, 0);
-                PWM_SetDuty(&pwm_cfg_2, 0);
-                LCD_Fill_Buffer(0);
-
-                LCD_printString("THIS IS UN-", 20, 30, 10, 3); 
-                LCD_printString("EGGCCEPTABLE!", 10, 70, 10, 3); 
-                LCD_Draw_Sprite_Scaled(30, 110, 16, 16, (uint8_t *)CharacterLOSEPAGE, 5);
-                LCD_printString("SCORE:", 140, 120, 1, 2); 
-                sprintf(score_str, "%d", score);
-                LCD_printString(score_str, 160, 150, 1, 3);
-                LCD_printString("Press Joystick Btn", 10, 200, 1, 2);
-                LCD_printString("To Restart", 60, 220, 1, 2);
-
-                LCD_Refresh(&cfg0);  
-
-                if (gameover_melody_play == 0) {
-                  gameover_melody();          // Play game over melody on buzzer
-                  gameover_melody_play = 1;   // Change flag to 1
-                }
-
-                if (current_input.btn3_pressed) {
-                    current_input.btn3_pressed = 0; 
-                    life = LIFE_MAX;
-                    shield = SHIELD_MAX;
-                    score = 0;
-                    Character_Init(&game_character); 
-
-                    level_state = LEVEL1;
-                    status_level = 0;
-                    game_state = GAME_LEVEL_PAGE; 
-
-                    gameover_melody_play = 0;
-                }
-                break;
-        }
-        
-        // Small delay to prevent overwhelming the LCD
-        HAL_Delay(30);    // Runs for 30ms
-    }
-}
-
-// ===== UPDATE & RENDER FUNCTIONS =====
-void opening_page (void) {
-    LCD_Fill_Buffer(0);
-
-    LCD_printString("Chick", 50, 50, 1, 5);
-    LCD_printString("Knight", 40, 110, 1, 5);
-
-    loading_line_animation(40, 200);
-    chick_intro_animation(180, 180);
-
-    LCD_Refresh(&cfg0);
-
-    HAL_Delay(80);  // controls animation speed
-}
-
-void win_melody (void) {
-    buzzer_note(&buzzer_cfg, NOTE_C6, 40);
-    HAL_Delay(100);
-
-    buzzer_note(&buzzer_cfg, NOTE_E6, 40);
-    HAL_Delay(100);
-
-    buzzer_note(&buzzer_cfg, NOTE_G6, 40);
-    HAL_Delay(100);
-
-    buzzer_note(&buzzer_cfg, NOTE_C7, 50);
-    HAL_Delay(500);
-    
-    buzzer_off(&buzzer_cfg);
-}
-
-/**
- * @brief Update character logic (FSM, movement)
- * 
- * This function handles all game logic updates:
- * - Processes input (joystick and button)
- * - Updates character FSM state transitions
- * - Updates animation frames
- */
-void update_character(Joystick_t* joy) {
-    // Check if dash was pressed and clear the flag
-    uint8_t dash_pressed = current_input.btn2_pressed;
-    
-    // Update character FSM with current input
-    Character_Update(&game_character, joy, dash_pressed);
-}
-
-/**
- * @brief Render the game to the LCD screen
- * 
- * This function handles all rendering/drawing:
- * - Clears the screen buffer
- * - Draws character sprite
- * - Refreshes LCD to display the frame
- */
-void render_game(void) {
-    // Clear screen buffer
-    LCD_Fill_Buffer(12);
-    
-    // Draw game border
-    LCD_Draw_Rect(0, 0, SCREEN_WIDTH, 7, 14, 1);
-    LCD_Draw_Rect(0, SCREEN_HEIGHT - 7, SCREEN_WIDTH, 7, 14, 1);
-    LCD_Draw_Rect(0, 0, 7, SCREEN_HEIGHT, 14, 1);
-    LCD_Draw_Rect(SCREEN_WIDTH - 7, 0, 7, SCREEN_HEIGHT, 14, 1);
-
-    // Draw ghost sprite shooting bullets at set position with animation
-    Lava_Draw();
-    // Draw coins at set position
-    Coins_Draw();  
-    Ghost_Bullet_Draw();
-    // Draw character at current position with animation
-    Character_Draw(&game_character);
-
-
-    // Print score board
-    sprintf(score_str, "Score:%d", score); 
-    LCD_printString(score_str, 15, 17, 1, 2);
-
-    // Print dash availibility and usage
-    char dash_str[24];
-    sprintf(dash_str, "Dash:%d", game_character.dash_charge);
-    LCD_printString(dash_str, 140, 17, 1, 2);
-
-    // Print life count 
-    char life_str[24];
-    sprintf(life_str, "Life:%d", life); 
-    LCD_printString(life_str, 140, 34, 3, 2);
-
-    // Print shield count
-    char shield_str[24];
-    sprintf(shield_str, "Shield:%d", shield); 
-    LCD_printString(shield_str, 15, 34, 11, 2);
-}
-
-void loading_line_animation(uint16_t x, uint16_t y) {
-    // Initialize length of loading line
-    static uint16_t len = 0;
-    
-    LCD_Draw_Rect(x, y, len, 5, 1, 1);
-
-    // Limiting the length
-    if (len < 130) {
-        // Draw small white rectangles
-        len += 5;
-    }
-}
-
-void chick_intro_animation (uint16_t x, uint16_t y) {
-    static uint8_t frame = 0;
-    
-    // Small character animation
-    if (frame == 0) {
-      LCD_Draw_Sprite_Scaled(x, y, 16, 16, (uint8_t*)CharacterWALKRIGHT_1, 2);
-    } else {
-      LCD_Draw_Sprite_Scaled(x, y, 16, 16, (uint8_t*)CharacterWALKRIGHT_2, 2);
     }
 
-    frame = !frame;
+    return exit_state;
 }

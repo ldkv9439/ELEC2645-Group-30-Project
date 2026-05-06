@@ -36,7 +36,7 @@ typedef enum {
 #define COST_SUNFLOWER   50
 #define COST_WALLNUT     50
 #define COST_A_PEASHOOTER 150
-#define COST_CHERRY_BOMB  150
+#define COST_CHERRY_BOMB  25
 
 #define HP_PEASHOOTER  300
 #define HP_SUNFLOWER   200
@@ -47,7 +47,7 @@ typedef enum {
 #define SHOOT_INTERVAL_PEASHOOTER  40
 #define SHOOT_INTERVAL_A_PEASHOOTER  20
 #define SUN_INTERVAL_SUNFLOWER    300
-#define EXPLODE_DURATION_CHERRY_BOMB 60
+#define EXPLODE_DURATION_CHERRY_BOMB 30
 
 typedef struct {
     PlantType type;
@@ -62,6 +62,7 @@ typedef struct {
     uint8_t     shoot_ready;
     uint8_t     sun_ready;
     uint8_t     explode_ready;
+    uint8_t     explode_timer;
 } Plant;
 
 void Plant_Init(Plant* plant, PlantType type, int16_t col, int16_t row);

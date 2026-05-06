@@ -7,17 +7,9 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
-#include "level.h"
-#include "stm32l4xx_hal.h"
-#include "coins.h"
-#include "ghost.h"
-
 #include <stdint.h>
 
-void Level1(void);
-void Level2(void);
-void Level3(void);
-void BossLevel(void);
+// ===== DATA STRUCTURES =====
 
 /**
  * @enum LevelState_t
@@ -30,8 +22,14 @@ typedef enum {
     BOSSLEVEL
 } LevelState_t;
 
+// ===== FUNCTIONS =====
+
+void Level1(void);
+void Level2(void);
+void Level3(void);
+void BossLevel(void);
+
 extern LevelState_t level_state;
 extern uint32_t boss_level_start_time;
-
 
 #endif

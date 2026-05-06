@@ -7,8 +7,11 @@
 #include "InputHandler.h"
 #include "LCD.h"
 #include "Buzzer.h"
+#include "PWM.h"
 #include "Plant.h"
 #include "Sprites.h"
+#include "stm32l476xx.h"
+#include "stm32l4xx_hal_gpio.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -16,13 +19,12 @@
 #define SCREEN_HEIGHT  240
 #define HUD_HEIGHT      24
 
-#define LED_PORT      GPIOA
-#define LED_PIN       GPIO_PIN_5
+#define LED_PORT      GPIOB
+#define LED_PIN       GPIO_PIN_6
 #define LED_FLASH_MS  80
 
 #define SFX_PLANT_PLACE   600
 #define SFX_ZOMBIE_KILL  1200
-#define SFX_PEA_FIRE      800
 #define SFX_SUN_COLLECT   900
 #define SFX_GAME_OVER     200
 #define SFX_WAVE_START    500
@@ -30,8 +32,9 @@
 #define SFX_DURATION_MS    60
 
 extern volatile uint8_t joystick_pressed;
-static const uint8_t WAVE_ZOMBIE_COUNT[TOTAL_WAVES] = {3, 4, 5, 6, 8};
+static const uint8_t WAVE_ZOMBIE_COUNT[TOTAL_WAVES] = {3, 6, 8, 10, 12};
 extern Buzzer_cfg_t buzzer_cfg;
+extern PWM_cfg_t pwm_cfg;
 
 /* ================================================================
  * Buzzer / LED helpers
@@ -51,7 +54,7 @@ static void PVZ_UpdateBuzzer(void) {
 }
 
 static void PVZ_LED_Flash(PVZEngine_t* e) {
-    HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+    PWM_SetDuty(&pwm_cfg, 200);
     e->led_off_tick = HAL_GetTick() + LED_FLASH_MS;
 }
 
@@ -60,15 +63,15 @@ static void PVZ_UpdateLED(PVZEngine_t* e) {
     for (int i = 0; i < MAX_ZOMBIES; i++)
         if (e->zombies[i].active && e->zombies[i].eating) { eating = 1; break; }
     if (eating) {
-        HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+        PWM_SetDuty(&pwm_cfg, 200);
         e->led_off_tick = 0;
     } else if (e->led_off_tick) {
         if ((int32_t)(HAL_GetTick() - e->led_off_tick) >= 0) {
-            HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+            PWM_SetDuty(&pwm_cfg, 0);
             e->led_off_tick = 0;
         }
     } else {
-        HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+        PWM_SetDuty(&pwm_cfg, 0);
     }
 }
 
@@ -246,6 +249,8 @@ static void PVZ_TickWave(PVZEngine_t* e) {
         e->spawn_timer       = SPAWN_INTERVAL;
         e->wave_active       = 1;
         e->current_wave++;
+        e->wave_announce     = 20;
+        e->state         = STATE_WAVE_ANNOUNCE;
         PVZ_Beep(SFX_WAVE_START);
         return;
     }
@@ -264,7 +269,13 @@ static void PVZ_TickAutoSun(PVZEngine_t* e) {
     if (s_sun_fall_timer > 0) s_sun_fall_timer--;
     else { PVZ_DropSun(e); s_sun_fall_timer = SUN_FALL_INTERVAL; }
 }
-
+static uint8_t PVZ_PlantUnlocked(PVZEngine_t* e, PlantType t) {
+    switch (t) {
+        case PLANT_A_PEASHOOTER: return e->current_wave >= 4;
+        case PLANT_CHERRY_BOMB:  return e->current_wave >= 5;
+        default:                 return 1;
+    }
+}
 /* ================================================================
  * Place armed plant at cursor
  * ================================================================ */
@@ -275,6 +286,8 @@ static uint8_t PVZ_TryPlace(PVZEngine_t* e) {
         case PLANT_PEASHOOTER: cost = COST_PEASHOOTER; break;
         case PLANT_SUNFLOWER:  cost = COST_SUNFLOWER;  break;
         case PLANT_WALLNUT:    cost = COST_WALLNUT;    break;
+        case PLANT_A_PEASHOOTER: cost = COST_A_PEASHOOTER; break;
+        case PLANT_CHERRY_BOMB:  cost = COST_CHERRY_BOMB; break;
         default: return 0;
     }
     if (e->sun < (uint16_t)cost) return 0;
@@ -295,11 +308,11 @@ void PVZEngine_Init(PVZEngine_t* engine) {
     engine->state         = STATE_PLAYING;
     engine->sun           = SUN_START;
     engine->lives         = 5;
-    engine->wave_timer    = 150;
+    engine->wave_timer    = 50;
     engine->spawn_timer   = SPAWN_INTERVAL;
     engine->selected_type = PLANT_PEASHOOTER;
     engine->plant_armed   = 0;
-
+    engine->current_wave = 4;
     s_sun_fall_timer = SUN_FALL_INTERVAL;
     s_prev_dir       = CENTRE;
     s_cur_frames     = 0;
@@ -323,10 +336,18 @@ void PVZEngine_Update(PVZEngine_t* engine, UserInput input) {
     /* STATE_MENU */
     if (engine->state == STATE_MENU) {
         if (input.direction == N && s_prev_dir != N) {
-            if (engine->selected_type > PLANT_PEASHOOTER) engine->selected_type--;
+        PlantType next = engine->selected_type;
+        do {
+            if (next > PLANT_PEASHOOTER) next--;
+        } while (next > PLANT_PEASHOOTER && !PVZ_PlantUnlocked(engine, next));
+        if (PVZ_PlantUnlocked(engine, next)) engine->selected_type = next;
         }
         if (input.direction == S && s_prev_dir != S) {
-            if (engine->selected_type < PLANT_CHERRY_BOMB) engine->selected_type++;
+            PlantType next = engine->selected_type;
+            do {
+                if (next < PLANT_CHERRY_BOMB) next++;
+            } while (next < PLANT_CHERRY_BOMB && !PVZ_PlantUnlocked(engine, next));
+            if (PVZ_PlantUnlocked(engine, next)) engine->selected_type = next;
         }
         if (click_event) {
             engine->plant_armed = 1;
@@ -359,35 +380,53 @@ void PVZEngine_Update(PVZEngine_t* engine, UserInput input) {
         if (!engine->plants[i].active) continue;
         Plant_Update(&engine->plants[i]);
 
+
+
+        /* Cherry bomb explosion */
+        if (engine->plants[i].explode_ready) {
+            int16_t bomb_col = engine->plants[i].grid_col;
+            int16_t bomb_row = engine->plants[i].grid_row;
+            for (int zi = 0; zi < MAX_ZOMBIES; zi++) {
+                if (!engine->zombies[zi].active) continue;
+                int16_t z_col = (engine->zombies[zi].x - GRID_ORIGIN_X) / CELL_W;
+                int16_t z_row = engine->zombies[zi].lane;
+                int16_t dc = z_col - bomb_col;
+                int16_t dr = z_row - bomb_row;
+                if (dc >= -1 && dc <= 1 && dr >= -1 && dr <= 1) {
+                    Zombie_TakeDamage(&engine->zombies[zi], 9999);
+                    if (!engine->zombies[zi].active)
+                        engine->score += Zombie_GetScore(&engine->zombies[zi]);
+                }
+            }
+            engine->plants[i].explode_ready = 0;
+            PVZ_Beep(SFX_ZOMBIE_KILL);
+            PVZ_LED_Flash(engine);
+            continue;
+        }
+
         if (engine->plants[i].shoot_ready) {
             int slot = PVZ_GetFreeProjectileSlot(engine);
             if (slot >= 0) {
-                    if (engine->plants[i].shoot_ready) {
-                    /* check if any active zombie is in the same lane */
-                    uint8_t zombie_in_lane = 0;
-                    for (int zi = 0; zi < MAX_ZOMBIES; zi++) {
-                        if (engine->zombies[zi].active &&
-                            engine->zombies[zi].lane == engine->plants[i].grid_row) {
-                            zombie_in_lane = 1;
-                            break;
-                        }
-                    }
-
-                    if (zombie_in_lane) {
-                        int slot = PVZ_GetFreeProjectileSlot(engine);
-                        if (slot >= 0) {
-                            int16_t px = engine->plants[i].x + (PEASHOOTER_COLS * PLANT_SCALE);
-                            int16_t py = engine->plants[i].y + (PEASHOOTER_ROWS * PLANT_SCALE) / 2 - (PEA_ROWS * 2) / 2;
-                            Projectile_Fire(&engine->projectiles[slot], px, py, engine->plants[i].grid_row);
-                            PVZ_Beep(SFX_PEA_FIRE);
-                        }
+                if (engine->plants[i].shoot_ready) {
+                uint8_t zombie_in_lane = 0;
+                for (int zi = 0; zi < MAX_ZOMBIES; zi++) {
+                    if (engine->zombies[zi].active &&
+                        engine->zombies[zi].lane == engine->plants[i].grid_row) {
+                        zombie_in_lane = 1;
+                        break;
                     }
                 }
-
-                int16_t px = engine->plants[i].x + (PEASHOOTER_COLS * PLANT_SCALE);
-                int16_t py = engine->plants[i].y + (PEASHOOTER_ROWS * PLANT_SCALE) / 2 - (PEA_ROWS * 2) / 2;
-                Projectile_Fire(&engine->projectiles[slot], px, py, engine->plants[i].grid_row);
-                PVZ_Beep(SFX_PEA_FIRE);
+                if (zombie_in_lane) {
+                    int slot = PVZ_GetFreeProjectileSlot(engine);
+                    if (slot >= 0) {
+                        int16_t px = engine->plants[i].x + (PEASHOOTER_COLS * PLANT_SCALE);
+                        int16_t py = engine->plants[i].y + (PEASHOOTER_ROWS * PLANT_SCALE) / 2
+                                    - (PEA_ROWS * 2) / 2;
+                        PeaType pea_type = (engine->plants[i].type == PLANT_A_PEASHOOTER) ? PEA_BLUE : PEA_NORMAL;
+                        Projectile_Fire(&engine->projectiles[slot], px, py, engine->plants[i].grid_row, pea_type);
+                    }
+                }
+            }
             }
         }
         if (engine->plants[i].sun_ready) {
@@ -428,23 +467,20 @@ void PVZEngine_Update(PVZEngine_t* engine, UserInput input) {
  * ================================================================ */
 static void PVZ_DrawHUD(PVZEngine_t* e) {
     char buf[24];
-    LCD_printString("SUN:", 0, 2, 6, 2);
+    LCD_printString("SUN:", 0, 2, 8, 2);
     sprintf(buf, "%d", e->sun);
-    LCD_printString(buf, 42, 2, 6, 2);
-    LCD_printString("SC:", 85, 2, 1, 2);
+    LCD_printString(buf, 42, 2, 8, 2);
+    LCD_printString("SCORE:", 80, 2, 12, 2);
     sprintf(buf, "%lu", e->score);
-    LCD_printString(buf, 115, 2, 1, 2);
-    LCD_printString("W:", 158, 2, 5, 2);
-    sprintf(buf, "%d/%d", e->current_wave, TOTAL_WAVES);
-    LCD_printString(buf, 175, 2, 5, 2);
-    LCD_printString("LV:", 205, 2, 2, 2);
+    LCD_printString(buf, 155, 2, 12, 2);
+    LCD_printString("LV:", 185, 2, 2, 2);
     sprintf(buf, "%d", e->lives);
-    LCD_printString(buf, 228, 2, 2, 2);
+    LCD_printString(buf, 225, 2, 2, 2);
     LCD_Draw_Line(0, HUD_HEIGHT, SCREEN_WIDTH, HUD_HEIGHT, 13);
 }
 
+
 static void PVZ_DrawMenu(PVZEngine_t* e) {
-    /* solid backdrop — drawn over everything including lawn */
     LCD_Draw_Rect(10, 40, 225, 195, 0, 1);   // black fill
 
     LCD_printString("PICK PLANT", 50, 58, 2, 2);
@@ -458,12 +494,24 @@ static void PVZ_DrawMenu(PVZEngine_t* e) {
         {PLANT_CHERRY_BOMB,  "Cherry Bomb 150", COST_CHERRY_BOMB, 12}
     };
     for (int i = 0; i < 5; i++) {
-        int16_t y = 100 + i * 24;  
-        uint8_t sel = (e->selected_type == options[i].t);
+    int16_t y = 100 + i * 24;
+    uint8_t unlocked = PVZ_PlantUnlocked(e, options[i].t);
+    uint8_t sel = (e->selected_type == options[i].t) && unlocked;
+
+    if (!unlocked) {
+            LCD_printString(options[i].n, 30, y, 8, 2);
+            LCD_Draw_Rect(175, y - 2, 45, 17, 0, 1);  // black fill behind hint
+            LCD_printString(options[i].t == PLANT_A_PEASHOOTER ? "W4+" : "W5+", 185, y, 8, 2);
+            continue;
+        }
         if (sel) LCD_Draw_Rect(25, y - 2, 195, 24, options[i].col, 0);
         LCD_printString(options[i].n, 30, y, sel ? options[i].col : 13, 2);
-        if (e->sun < options[i].c) LCD_printString("$$", 185, y, 8, 2);
-    }
+        if (e->sun < options[i].c){
+            LCD_Draw_Rect(175, y - 2, 45, 17, 0, 1);  // black fill behind
+            LCD_printString("$$", 185, y, 8, 2);
+        }
+}
+
 }
 
 static void PVZ_DrawCursor(PVZEngine_t* e) {
@@ -506,19 +554,34 @@ void PVZEngine_Draw(PVZEngine_t* engine) {
         case STATE_GAME_OVER:
             LCD_Draw_Rect(20, 80, 200, 85, 0, 1);
             LCD_Draw_Rect(20, 80, 200, 85, 2, 0);
-            LCD_printString("GAME OVER", 38, 90, 2, 3);
+            LCD_printString("GAME OVER :(", 38, 90, 2, 3);
             { char buf[24]; sprintf(buf, "Score: %lu", engine->score);
-              LCD_printString(buf, 45, 140, 1, 2); }
+              LCD_printString(buf, 45, 135, 8, 3); }
             break;
         case STATE_WIN:
             LCD_Draw_Rect(20, 80, 200, 85, 0, 1);
             LCD_Draw_Rect(20, 80, 200, 85, 3, 0);
-            LCD_printString("YOU WIN!", 48, 90, 3, 3);
+            LCD_printString("YOU WIN!", 48, 90, 12, 3);
             { char buf[24]; sprintf(buf, "Score: %lu", engine->score);
-              LCD_printString(buf, 45, 140, 6, 2); }
+              LCD_printString(buf, 45, 135, 8, 3); }
+            break;
+        case STATE_WAVE_ANNOUNCE:
+                {
+                char buf[16];
+                sprintf(buf, "WAVE %d", engine->current_wave);
+                LCD_Draw_Rect(20, 90, 205, 60, 0, 1);   // black filled rect behind
+                LCD_Draw_Rect(20, 90, 205, 60, 3, 0);   // coloured border
+                LCD_printString(buf, 40, 101, 2, 5);
+                LCD_printString(buf, 38, 100, 3, 5);
+                
+            }
+            engine->wave_announce--;
+            if (engine->wave_announce == 0)
+                engine->state = STATE_PLAYING;
             break;
         default: break;
     }
+
 }
 
 uint16_t    PVZEngine_GetSun(PVZEngine_t* e)   { return e->sun;   }

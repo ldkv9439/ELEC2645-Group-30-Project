@@ -31,21 +31,20 @@
 #include "Joystick.h"
 
 /* ---- Pool sizes ---- */
-#define MAX_PLANTS       45
-#define MAX_ZOMBIES       8
+#define MAX_PLANTS       36
+#define MAX_ZOMBIES      12
 #define MAX_PROJECTILES  20
-#define MAX_SUNS          6
+#define MAX_SUNS         10
 
 /* ---- Sun economy ---- */
 #define SUN_START         150
-#define SUN_FALL_INTERVAL 180
+#define SUN_FALL_INTERVAL 100
 #define SUN_FALL_VALUE     25
-#define SUN_COLLECT_VALUE  25
 
 /* ---- Wave system ---- */
 #define TOTAL_WAVES        5
-#define WAVE_INTERVAL    300
-#define SPAWN_INTERVAL   120
+#define WAVE_INTERVAL    100
+#define SPAWN_INTERVAL   60
 
 /* ---- Sun collectible ---- */
 typedef struct {
@@ -62,6 +61,7 @@ typedef enum {
     STATE_MENU      = 1,   /* plant-select overlay (paused)    */
     STATE_GAME_OVER = 2,
     STATE_WIN       = 3,
+    STATE_WAVE_ANNOUNCE = 4,
 } GameState_t;
 
 /**
@@ -82,6 +82,7 @@ typedef struct {
     uint16_t      spawn_timer;
     uint8_t       zombies_this_wave;
     uint8_t       wave_active;
+    uint8_t       wave_announce;
 
     /* Cursor */
     int16_t       cursor_col;

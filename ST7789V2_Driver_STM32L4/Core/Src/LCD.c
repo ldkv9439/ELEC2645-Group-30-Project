@@ -39,9 +39,9 @@ static const uint16_t palette_custom[16] = {
 
 static const uint16_t game_3_palette_custom[16] = {
     RGB565_BLACK, LCD_COLOUR_1, LCD_COLOUR_2, LCD_COLOUR_3,
-    LCD_COLOUR_4, LCD_COLOUR_5, LCD_COLOUR_6, LCD_COLOUR_7,
+    RGB565_SKY_BLUE, LCD_COLOUR_5, LCD_COLOUR_6, LCD_COLOUR_7,
     LCD_COLOUR_8,  LCD_COLOUR_9,  LCD_COLOUR_10, LCD_COLOUR_11,
-    RGB565_GREY_1, LCD_COLOUR_13, RGB565_VINTAGE_5, RGB565_ORANGE_BRIGHT 
+    LCD_COLOUR_12, RGB565_GREY_6, RGB565_GREY_1 , RGB565_GREY_2
 };
 
 // Active palette pointer (defaults to palette_default)
