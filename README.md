@@ -23,22 +23,33 @@ This project provides:
 ## Project Structure
 
 ```
-MenuTest/
-├── Core/              # STM32 auto-generated files
-├── Drivers/           # STM32 HAL drivers
-├── shared/            # Shared menu system & input handling
-│   ├── Menu.h/c
-│   └── InputHandler.h/c
-├── game_1/            # Game 1 folder
-│   └── Game_1.c
-├── game_2/            # Game 2 folder
-│   └── Game_2.c
-├── game_3/            # Game 3 folder
-│   └── Game_3.c
-├── Joystick/          # Hardware drivers
-├── PWM/
-├── Buzzer/
-└── CMakeLists.txt
+ELEC2645-Group-30-Project/
+├── Core/                        # STM32 HAL auto-generated files
+│   └── Inc/                     
+├── Drivers/
+│   ├── CMSIS/
+│   └── STM32L4xx_HAL_Driver/
+├── shared/                      # Shared menu & input system
+│   ├── Menu.h / Menu.c
+│   └── InputHandler.h / InputHandler.c
+├── game_1/                      # Maze Runner
+│   ├── Game_1.h / Game_1.c
+│   └── BUTTON_INPUT_GUIDE.md
+├── game_2/                      # Plants vs Zombies
+│   ├── Game_2.h / Game_2.c
+│   ├── PVZEngine.h / PVZEngine.c
+│   ├── Plant.h/c, Zombie.h/c, Projectile.h/c
+├── game_3/                      # Chick Knight
+│   ├── Game_3.h / Game_3.c
+│   ├── Character.h/c, ghost.h/c
+│   ├── coins.h/c, Flame.h/c, level.h/c
+├── Joystick/                    # Joystick driver
+├── Buzzer/                      # Buzzer driver
+├── PWM/                         # PWM LED driver
+├── ST7789V2_Driver_STM32L4/     # LCD driver
+├── cmake/                       # Toolchain files
+├── CMakeLists.txt
+└── CMakePresets.json
 ```
 ## Games
  
